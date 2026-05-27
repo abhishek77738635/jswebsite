@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
     return firebaseSignOut(auth);
   }
 
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
