@@ -1,2 +1,4 @@
-// Vercel catch-all for /api/* (categories, questions, payment, etc.)
-module.exports = require("../server/server");
+const app = require("../server/server");
+
+// @vercel/node invokes the Express app as a serverless handler
+module.exports = app;

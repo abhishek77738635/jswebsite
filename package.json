@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "install:all": "npm install",
+    "build": "npm run build -w js-interview-client",
     "dev:server": "npm run dev -w js-interview-server",
     "start:server": "npm run start -w js-interview-server",
     "dev:client": "dotenv -e .env -- npm run start -w js-interview-client",
