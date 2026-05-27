@@ -1,14 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build:client",
+  "buildCommand": "npm run build -w js-interview-client",
   "outputDirectory": "client/build",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/server/server.js" },
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
-    "server/server.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   }
