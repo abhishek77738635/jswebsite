@@ -1,7 +1,6 @@
 import { auth } from '../config/firebase';
-import { getApiBaseUrl } from '../config/apiBase';
 
-const BASE_URL = getApiBaseUrl();
+const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 class ApiService {
   async request(endpoint, options = {}) {
