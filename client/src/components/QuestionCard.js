@@ -15,36 +15,20 @@ const QuestionCard = ({ question, onPremiumClick }) => {
   const isLocked =
     question.isPremium && (codeStr === LOCK_MARKERS || codeStr.endsWith('Premium content locked'));
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'Beginner':
-        return 'bg-emerald-100 text-emerald-900 border-emerald-200';
-      case 'Intermediate':
-        return 'bg-amber-100 text-amber-950 border-amber-200';
-      case 'Advanced':
-        return 'bg-sky-100 text-sky-950 border-sky-200';
-      case 'Expert':
-        return 'bg-red-100 text-red-950 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   return (
-    <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300 hover:shadow-md">
+    <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
       {/* Header */}
-      <div className="border-b border-gray-100 p-5 sm:p-6">
+      <div className="border-b border-gray-100 p-5 sm:p-6 dark:border-gray-800">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">{question.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 sm:text-xl">{question.title}</h3>
               {question.isPremium ? <Crown className="h-5 w-5 shrink-0 text-amber-500" aria-hidden /> : null}
             </div>
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                {question.difficulty}
+              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-200">
+                {question.category}
               </span>
-              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-900">{question.category}</span>
               {question.companies?.length ? (
                 <span className="flex flex-wrap items-center gap-1">
                   <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Companies</span>
@@ -64,7 +48,7 @@ const QuestionCard = ({ question, onPremiumClick }) => {
                 </span>
               ) : null}
             </div>
-            <p className="leading-relaxed text-gray-700">{question.question}</p>
+            <p className="leading-relaxed text-gray-700 dark:text-gray-300">{question.question}</p>
 
             {!currentUser && question.isPremium ? (
               <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -84,7 +68,7 @@ const QuestionCard = ({ question, onPremiumClick }) => {
       {/* Body */}
       <div className="p-5 sm:p-6">
         <div className="mb-6">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Code</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Code</h4>
           <div style={{height: isLocked ? '25em' : 'auto'}} className={`relative rounded-xl overflow-hidden ${isLocked ? 'ring-2 ring-offset-2 ring-violet-300/70' : ''}`}>
             <SyntaxHighlighter
               language="javascript"
@@ -109,7 +93,7 @@ const QuestionCard = ({ question, onPremiumClick }) => {
                     {!currentUser ? 'Sign in to continue' : 'Complete payment to unlock'}
                   </p>
                   <p className="mt-2 text-sm text-gray-300">
-                    Answers, explanations, and the full runnable snippet stay on the server until you have access—this helps keep paid content fairly distributed.
+                 Login and pay ₹199 to unlock all premium questions, answers and explanations.
                   </p>
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -171,12 +155,12 @@ const QuestionCard = ({ question, onPremiumClick }) => {
         ) : null}
 
         {!isLocked && question.tags?.length ? (
-          <div className="mt-6 border-t border-gray-100 pt-4">
+          <div className="mt-6 border-t border-gray-100 pt-4 dark:border-gray-800">
             <div className="flex flex-wrap gap-2">
               {question.tags.map((tag, idx) => (
                 <span
                   key={`${question.id}-tag-${idx}-${tag}`}
-                  className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200/70"
+                  className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200/70 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
                 >
                   {tag}
                 </span>

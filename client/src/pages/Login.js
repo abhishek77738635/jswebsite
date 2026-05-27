@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import Spinner from '../components/Spinner';
 
 function Login() {
   const { loginWithGoogle, currentUser } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +40,7 @@ function Login() {
 
   if (currentUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gray-50">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-950">
         <Spinner className="h-10 w-10 text-blue-600" />
         <p className="text-sm text-gray-500">Redirecting…</p>
       </div>
@@ -45,16 +48,24 @@ function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 py-12 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen flex-col justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 py-12 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 sm:px-6 lg:px-8">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="absolute right-4 top-4 rounded-lg border border-gray-200 bg-white p-2 text-gray-600 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </button>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-extrabold tracking-tight text-gray-900">Sign in</h1>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <h1 className="text-center text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Sign in</h1>
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Unlock premium JavaScript interview questions after you sign in with Google.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-8 shadow-xl sm:px-10">
+        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-8 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:px-10">
           {error ? (
             <div className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
           ) : null}
@@ -63,7 +74,7 @@ function Login() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
           >
             {loading ? (
               <Spinner className="h-5 w-5" label={null} />

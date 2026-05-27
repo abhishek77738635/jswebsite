@@ -1,11 +1,13 @@
 import React from 'react';
-import { Code, Menu, LogOut, User, LayoutDashboard } from 'lucide-react';
+import { Code, Menu, LogOut, User, LayoutDashboard, Search, Moon, Sun, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAdminUser } from '../constants/admin';
 
-const Header = ({ onMenuToggle }) => {
+const Header = ({ onMenuToggle, searchTerm, onSearchChange, isSearching }) => {
   const { currentUser, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const showAdmin = isAdminUser(currentUser);
 
@@ -19,81 +21,115 @@ const Header = ({ onMenuToggle }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 border-b border-gray-800 bg-gray-900 text-white shadow-lg">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-3">
-        <Link to="/" className="flex min-w-0 items-center gap-3">
-          <Code className="h-8 w-8 shrink-0 text-blue-400" aria-hidden />
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold sm:text-xl">JS Interview Prep</h1>
-            <p className="hidden truncate text-xs text-gray-300 sm:block">Master JavaScript Interviews</p>
-          </div>
-        </Link>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          {showAdmin && (
-            <Link
-              to="/admin"
-              className="hidden items-center gap-2 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium hover:bg-gray-700 sm:flex"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Admin
-            </Link>
-          )}
-          {currentUser ? (
-            <div className="hidden md:flex md:items-center md:gap-2">
-              <div className="flex max-w-[200px] items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5">
-                {currentUser.photoURL ? (
-                  <img
-                    src={currentUser.photoURL}
-                    alt=""
-                    className="h-6 w-6 shrink-0 rounded-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <User className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
-                )}
-                <span className="truncate text-sm font-medium" title={currentUser.email}>
-                  {currentUser.displayName || currentUser.email?.split('@')[0]}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-red-400"
-                title="Sign out"
-                aria-label="Sign out"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
+    <header className="sticky top-0 z-50 shrink-0 border-b border-gray-200 bg-white text-gray-900 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+      <div className="mx-auto max-w-[1600px] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+            <Code className="h-7 w-7 shrink-0 text-blue-600 dark:text-blue-400 sm:h-8 sm:w-8" aria-hidden />
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold sm:text-lg">JS Interview Prep</h1>
+              <p className="hidden truncate text-xs text-gray-500 dark:text-gray-400 md:block">
+                Master JavaScript Interviews
+              </p>
             </div>
-          ) : (
-            <Link
-              to="/login"
-              className="hidden items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-700 md:flex"
-            >
-              <User className="h-4 w-4" />
-              Sign in
-            </Link>
-          )}
+          </Link>
 
-          {showAdmin && (
-            <Link
-              to="/admin"
-              className="rounded-lg border border-gray-600 bg-gray-800 p-2 sm:hidden"
-              aria-label="Admin panel"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-            </Link>
-          )}
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              aria-hidden
+            />
+            <input
+              type="search"
+              placeholder="Search title, prompt, tags..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400"
+            />
+            {isSearching ? (
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-500" aria-hidden />
+              </span>
+            ) : null}
+          </div>
 
-          <button
-            type="button"
-            onClick={onMenuToggle}
-            className="rounded-lg p-2 hover:bg-gray-800 lg:hidden"
-            aria-label={onMenuToggle ? 'Open filters' : 'Toggle menu'}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
+            {showAdmin && (
+              <Link
+                to="/admin"
+                className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 sm:flex"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
+
+            {currentUser ? (
+              <div className="hidden md:flex md:items-center md:gap-1">
+                <div className="flex max-w-[180px] items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-800">
+                  {currentUser.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <User className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+                  )}
+                  <span className="truncate text-sm font-medium" title={currentUser.email}>
+                    {currentUser.displayName || currentUser.email?.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
+                  title="Sign out"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 md:flex"
+              >
+                <User className="h-4 w-4" />
+                Sign in
+              </Link>
+            )}
+
+            {showAdmin && (
+              <Link
+                to="/admin"
+                className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800 sm:hidden"
+                aria-label="Admin panel"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={onMenuToggle}
+              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
+              aria-label="Open filters"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

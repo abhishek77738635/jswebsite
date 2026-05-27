@@ -38,9 +38,9 @@ function RequireAdmin({ children }) {
 
   if (!isAdminUser(currentUser)) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gray-50">
-        <Spinner className="h-10 w-10 text-blue-600" />
-        <p className="text-sm text-gray-600">Checking access…</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-950">
+        <Spinner className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+        <p className="text-sm text-gray-600 dark:text-gray-400">Checking access…</p>
       </div>
     );
   }

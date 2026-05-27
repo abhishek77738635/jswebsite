@@ -4,13 +4,14 @@ import Sidebar from '../components/Sidebar';
 import QuestionCard from '../components/QuestionCard';
 import Spinner from '../components/Spinner';
 import apiService from '../services/api';
-import { Search, Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { load } from '@cashfreepayments/cashfree-js';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
+const FREE_PREVIEW_COUNT = 10;
 
 const DIFFICULTY_SORT_ORDER = { All: 0, Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 };
 
@@ -53,12 +54,11 @@ function Home() {
   const [difficulties, setDifficulties] = useState(['All']);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
   const [error, setError] = useState(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const [page, setPage] = useState(1);
+  const [hasPaid, setHasPaid] = useState(false);
 
-  /** Skip scrolling on initial mount — only scroll when the user paginates after that. */
   const skipPaginationScrollOnce = useRef(true);
 
   const { currentUser } = useAuth();
@@ -117,12 +117,11 @@ function Home() {
           setPagination(questionsRes.pagination);
         }
 
-        setIsOnline(true);
+        setHasPaid(Boolean(questionsRes.access?.hasPaid));
       } catch (e) {
         if (!cancelled) {
           console.error(e);
           setError(e.message || 'Could not reach the API');
-          setIsOnline(false);
           setQuestions([]);
         }
       } finally {
@@ -228,11 +227,23 @@ function Home() {
 
   const retryConnection = () => setRetryNonce((c) => c + 1);
 
+  const hasActiveFilters =
+    selectedCategory !== 'All' ||
+    selectedDifficulty !== 'All' ||
+    showPremiumOnly ||
+    showFreeOnly ||
+    searchTerm;
+
   const sidebarStats = loading ? null : { listed: questions.length, total: pagination.totalCount };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header onMenuToggle={() => setIsSidebarOpen((o) => !o)} />
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+      <Header
+        onMenuToggle={() => setIsSidebarOpen((o) => !o)}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        isSearching={searchTerm !== debouncedSearch}
+      />
 
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1">
         <Sidebar
@@ -259,112 +270,72 @@ function Home() {
 
         <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mb-6 space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <h2 id="questions" className="text-xl font-bold text-gray-900 sm:text-2xl">
-                  JavaScript interview questions
-                </h2>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                  {isOnline && !error ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-emerald-800 ring-1 ring-emerald-200">
-                      <Wifi className="h-3.5 w-3.5" aria-hidden />
-                      Connected
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-2.5 py-0.5 text-red-800 ring-1 ring-red-100">
-                      <WifiOff className="h-3.5 w-3.5" aria-hidden />
-                      Offline
-                      <button
-                        type="button"
-                        onClick={retryConnection}
-                        className="rounded p-0.5 hover:bg-red-100"
-                        title="Retry"
-                        aria-label="Retry loading"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end lg:max-w-xl">
-                <div className="relative w-full sm:max-w-sm">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
-                    placeholder="Search title, prompt, tags, category..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
-                  />
-                  {searchTerm !== debouncedSearch ? (
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-500" aria-hidden />
-                    </span>
-                  ) : null}
-                </div>
-                {(selectedCategory !== 'All' ||
-                  selectedDifficulty !== 'All' ||
-                  showPremiumOnly ||
-                  showFreeOnly ||
-                  searchTerm) && (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="questions" className="text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
+                JavaScript interview questions
+              </h2>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                >
+                  Clear filters
+                </button>
+              ) : null}
             </div>
 
-            <div className="flex flex-wrap items-end justify-between gap-2 border-b border-gray-200 pb-3">
-              <p className="text-sm text-gray-600">
+            {!loading && !hasPaid ? (
+              <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100">
+                Showing the first {FREE_PREVIEW_COUNT} free questions. Sign in and upgrade to unlock the full library.
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap items-end justify-between gap-2 border-b border-gray-200 pb-3 dark:border-gray-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600" aria-hidden />
+                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" aria-hidden />
                     Loading…
                   </span>
                 ) : (
                   <>
-                    Showing <span className="font-semibold text-gray-900">{questions.length}</span> on this page
+                    Showing <span className="font-semibold text-gray-900 dark:text-gray-100">{questions.length}</span> on
+                    this page
                     {pagination.totalCount > 0 ? (
                       <>
                         {' '}
-                        of <span className="font-semibold text-gray-900">{pagination.totalCount}</span> matching
+                        of <span className="font-semibold text-gray-900 dark:text-gray-100">{pagination.totalCount}</span>{' '}
+                        matching
                       </>
                     ) : null}
                   </>
                 )}
               </p>
-              {error ? <span className="max-w-xl text-sm text-red-600">{error}</span> : null}
+              {error ? <span className="max-w-xl text-sm text-red-600 dark:text-red-400">{error}</span> : null}
             </div>
 
             {loading && !questions.length ? (
               <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 py-16">
-                <Spinner className="h-12 w-12 text-blue-600" />
-                <p className="text-sm text-gray-500">
+                <Spinner className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {paymentLoading ? 'Preparing checkout…' : 'Loading questions…'}
                 </p>
               </div>
             ) : null}
-
           </div>
 
           {!loading && !error && questions.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-white px-8 py-16 text-center shadow-sm">
-              <Search className="mx-auto mb-4 h-12 w-12 text-gray-300" aria-hidden />
-              <p className="text-lg font-semibold text-gray-800">No questions match these filters</p>
-              <p className="mt-2 text-sm text-gray-500">Try a different search phrase or broaden your filters.</p>
+            <div className="rounded-2xl border border-gray-200 bg-white px-8 py-16 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <Search className="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" aria-hidden />
+              <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">No questions match these filters</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Try a different search phrase or broaden your filters.
+              </p>
               <button
                 type="button"
                 onClick={resetFilters}
-                className="mt-6 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+                className="mt-6 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Reset filters
               </button>
@@ -372,12 +343,12 @@ function Home() {
           ) : null}
 
           {error ? (
-            <div className="rounded-2xl border border-red-100 bg-red-50/90 p-8 text-center">
-              <p className="font-medium text-red-900">Could not load data</p>
+            <div className="rounded-2xl border border-red-100 bg-red-50/90 p-8 text-center dark:border-red-900/50 dark:bg-red-950/40">
+              <p className="font-medium text-red-900 dark:text-red-200">Could not load data</p>
               <button
                 type="button"
                 onClick={retryConnection}
-                className="mt-4 rounded-xl bg-red-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-800"
+                className="mt-4 rounded-xl bg-red-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
               >
                 Retry
               </button>
@@ -387,15 +358,17 @@ function Home() {
           <div className="relative pb-24">
             {loading && questions.length ? (
               <div
-                className="absolute inset-0 z-10 flex justify-center rounded-2xl bg-white/65 pt-8 backdrop-blur-[2px]"
+                className="absolute inset-0 z-10 flex justify-center rounded-2xl bg-white/65 pt-8 backdrop-blur-[2px] dark:bg-gray-950/70"
                 aria-live="polite"
                 aria-busy="true"
                 role="status"
               >
-                <div className="flex h-fit flex-col items-center gap-3 rounded-2xl border border-blue-100 bg-white px-8 py-6 shadow-xl">
-                  <Spinner className="h-10 w-10 text-blue-600" />
-                  <p className="text-sm font-medium text-gray-800">Loading this page…</p>
-                  <p className="max-w-[16rem] text-center text-xs text-gray-500">Hang on while questions load.</p>
+                <div className="flex h-fit flex-col items-center gap-3 rounded-2xl border border-blue-100 bg-white px-8 py-6 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                  <Spinner className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Loading this page…</p>
+                  <p className="max-w-[16rem] text-center text-xs text-gray-500 dark:text-gray-400">
+                    Hang on while questions load.
+                  </p>
                 </div>
               </div>
             ) : null}
@@ -408,27 +381,27 @@ function Home() {
 
           {!loading && !error && pagination.totalPages > 1 ? (
             <nav
-              className="sticky bottom-4 z-20 mx-auto flex max-w-md items-center justify-center gap-4 rounded-full border border-gray-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:bottom-8"
+              className="sticky bottom-4 z-20 mx-auto flex max-w-md items-center justify-center gap-4 rounded-full border border-gray-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 sm:bottom-8"
               aria-label="Pagination"
             >
               <button
                 type="button"
                 disabled={!pagination.hasPrevPage}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden />
                 Prev
               </button>
-              <span className="text-sm text-gray-600">
-                Page <strong className="text-gray-900">{pagination.currentPage}</strong> of{' '}
-                <strong className="text-gray-900">{pagination.totalPages}</strong>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Page <strong className="text-gray-900 dark:text-gray-100">{pagination.currentPage}</strong> of{' '}
+                <strong className="text-gray-900 dark:text-gray-100">{pagination.totalPages}</strong>
               </span>
               <button
                 type="button"
                 disabled={!pagination.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Next
                 <ChevronRight className="h-4 w-4" aria-hidden />
@@ -436,7 +409,7 @@ function Home() {
             </nav>
           ) : null}
 
-          <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500">
+          <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
             <p>&copy; 2026 JS Interview Prep. Built with React.</p>
           </footer>
         </main>

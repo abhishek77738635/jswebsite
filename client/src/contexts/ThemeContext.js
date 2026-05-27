@@ -1,0 +1,34 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+const ThemeContext = createContext(null);
+
+function getInitialDark() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') return true;
+  if (saved === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+export function ThemeProvider({ children }) {
+  const [isDark, setIsDark] = useState(getInitialDark);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#111827' : '#ffffff');
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark((d) => !d);
+
+  return (
+    <ThemeContext.Provider value={{ isDark, toggleTheme, setIsDark }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
+}

@@ -9,6 +9,7 @@ const { loadStaticQuestions } = require('../data/staticFallback');
 const { shouldUseStaticFallback } = require('../lib/firestoreErrors');
 const { invalidateAfterQuestionsWrite } = require('../lib/invalidateDataCache');
 const { applyCacheHeaders, setDataCacheSource } = require('../lib/cacheHeaders');
+const { applyAccessTier, FREE_PREVIEW_COUNT } = require('../lib/questionAccess');
 
 async function loadQuestionsSafe() {
   try {
@@ -34,6 +35,7 @@ function buildQuestionsListResponse(raw, req, res) {
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
   let questions = filterQuestions(raw, req.query);
+  questions = applyAccessTier(questions, req.user, req.query);
   questions = maskPremiumForUser(questions, req.user);
 
   questions.sort((a, b) => {
@@ -65,6 +67,11 @@ function buildQuestionsListResponse(raw, req, res) {
       difficulty: req.query.difficulty || 'All',
       isPremium: req.query.isPremium ?? 'All',
       search: req.query.search || '',
+    },
+    access: {
+      hasPaid: Boolean(req.user?.hasPaid),
+      freePreviewCount: FREE_PREVIEW_COUNT,
+      onFreeTier: !req.user?.hasPaid,
     },
   };
 }
