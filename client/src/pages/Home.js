@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const FREE_PREVIEW_COUNT = 10;
 
 const DIFFICULTY_SORT_ORDER = { All: 0, Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 };
@@ -287,7 +287,7 @@ function Home() {
 
             {!loading && !hasPaid ? (
               <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100">
-                Showing the first {FREE_PREVIEW_COUNT} free questions. Sign in and upgrade to unlock the full library.
+                First {FREE_PREVIEW_COUNT} questions are free. Browse the full list — upgrade to unlock the rest.
               </p>
             ) : null}
 

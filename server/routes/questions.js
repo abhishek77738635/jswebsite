@@ -9,7 +9,11 @@ const { loadStaticQuestions } = require('../data/staticFallback');
 const { shouldUseStaticFallback } = require('../lib/firestoreErrors');
 const { invalidateAfterQuestionsWrite } = require('../lib/invalidateDataCache');
 const { applyCacheHeaders, setDataCacheSource } = require('../lib/cacheHeaders');
-const { applyAccessTier, FREE_PREVIEW_COUNT } = require('../lib/questionAccess');
+const {
+  FREE_PREVIEW_COUNT,
+  getFreePreviewIds,
+  sortCatalogForUser,
+} = require('../lib/questionAccess');
 
 async function loadQuestionsSafe() {
   try {
@@ -34,17 +38,21 @@ function buildQuestionsListResponse(raw, req, res) {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
-  let questions = filterQuestions(raw, req.query);
-  questions = applyAccessTier(questions, req.user, req.query);
-  questions = maskPremiumForUser(questions, req.user);
+  const freePreviewIds = getFreePreviewIds(raw);
 
-  questions.sort((a, b) => {
-    const valA = a[sortBy];
-    const valB = b[sortBy];
-    if (valA < valB) return sortOrder === 'desc' ? 1 : -1;
-    if (valA > valB) return sortOrder === 'desc' ? -1 : 1;
-    return 0;
-  });
+  let questions = filterQuestions(raw, req.query);
+  questions = sortCatalogForUser(questions, req.user, freePreviewIds);
+  questions = maskPremiumForUser(questions, req.user, freePreviewIds);
+
+  if (req.user?.hasPaid && sortBy) {
+    questions.sort((a, b) => {
+      const valA = a[sortBy];
+      const valB = b[sortBy];
+      if (valA < valB) return sortOrder === 'desc' ? 1 : -1;
+      if (valA > valB) return sortOrder === 'desc' ? -1 : 1;
+      return 0;
+    });
+  }
 
   const totalCount = questions.length;
   const totalPages = Math.ceil(totalCount / limitNum) || 1;
@@ -72,6 +80,7 @@ function buildQuestionsListResponse(raw, req, res) {
       hasPaid: Boolean(req.user?.hasPaid),
       freePreviewCount: FREE_PREVIEW_COUNT,
       onFreeTier: !req.user?.hasPaid,
+      freePreviewIds: [...freePreviewIds],
     },
   };
 }
@@ -200,7 +209,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const [data] = maskPremiumForUser([found], req.user);
+    const freePreviewIds = getFreePreviewIds(raw);
+    const [data] = maskPremiumForUser([found], req.user, freePreviewIds);
 
     res.json({
       success: true,

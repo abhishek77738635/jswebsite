@@ -13,7 +13,10 @@ const QuestionCard = ({ question, onPremiumClick }) => {
 
   const codeStr = typeof question.code === 'string' ? question.code.trim() : '';
   const isLocked =
-    question.isPremium && (codeStr === LOCK_MARKERS || codeStr.endsWith('Premium content locked'));
+    question.accessUnlocked === false ||
+    codeStr === LOCK_MARKERS ||
+    codeStr === 'Premium content locked' ||
+    codeStr.endsWith('Premium content locked');
 
   return (
     <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
@@ -42,6 +45,11 @@ const QuestionCard = ({ question, onPremiumClick }) => {
                   ))}
                 </span>
               ) : null}
+              {question.accessUnlocked && !question.isPremium ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+                  Free
+                </span>
+              ) : null}
               {question.isPremium ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
                   <Sparkles className="h-3 w-3" aria-hidden /> Premium
@@ -50,15 +58,15 @@ const QuestionCard = ({ question, onPremiumClick }) => {
             </div>
             <p className="leading-relaxed text-gray-700 dark:text-gray-300">{question.question}</p>
 
-            {!currentUser && question.isPremium ? (
-              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                <strong className="font-semibold">Sign in required.</strong> To view this premium prompt and code sample, please sign in with Google first.
+            {!currentUser && isLocked ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+                <strong className="font-semibold">Sign in required.</strong> Sign in with Google to unlock more questions.
               </p>
             ) : null}
 
-            {currentUser && question.isPremium && isLocked ? (
-              <p className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-950">
-                <strong className="font-semibold">Payment required.</strong> Unlock full code, answers, and explanations once your payment succeeds.
+            {currentUser && isLocked ? (
+              <p className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-950 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-100">
+                <strong className="font-semibold">Payment required.</strong> Upgrade to unlock full code, answers, and explanations.
               </p>
             ) : null}
           </div>
