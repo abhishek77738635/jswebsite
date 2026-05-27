@@ -5,16 +5,6 @@ const cors = require("cors");
 
 const app = express();
 
-// Vercel serverless may forward paths without the /api prefix
-if (process.env.VERCEL) {
-  app.use((req, _res, next) => {
-    if (!req.url.startsWith("/api")) {
-      req.url = `/api${req.url.startsWith("/") ? req.url : `/${req.url}`}`;
-    }
-    next();
-  });
-}
-
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
