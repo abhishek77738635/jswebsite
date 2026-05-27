@@ -24,6 +24,7 @@ REPO="${REPO:-js-website}"
 REMOTE="https://github.com/${GH_USER}/${REPO}.git"
 git remote remove origin 2>/dev/null || true
 git remote add origin "$REMOTE"
+git config --local credential.username "$GH_USER"
 
 echo ""
 echo "Done. This folder is linked to: $REMOTE"
