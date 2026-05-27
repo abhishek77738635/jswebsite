@@ -4,6 +4,7 @@ const fs = require('fs');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { requireAdmin } = require('../middleware/admin');
+const { invalidateAfterBulkSeed, invalidateAfterQuestionsWrite, invalidateAfterCategoriesWrite } = require('../lib/invalidateDataCache');
 const categories = [
   { name: "Objects", description: "Object-related JavaScript concepts and behavior" },
   { name: "Functions", description: "Function scope, context, and execution" },
@@ -239,6 +240,7 @@ router.post('/questions', async (req, res) => {
     });
     await batch.commit();
     console.log(`Inserted ${questions.length} questions`);
+    await invalidateAfterQuestionsWrite();
 
     res.json({
       success: true,
@@ -274,6 +276,7 @@ router.post('/categories', async (req, res) => {
     });
     await batch.commit();
     console.log(`Inserted ${categories.length} categories`);
+    await invalidateAfterCategoriesWrite();
 
     res.json({
       success: true,
@@ -317,6 +320,7 @@ router.post('/all', async (req, res) => {
     console.log(`Inserted ${questions.length} questions`);
 
     await batch.commit();
+    await invalidateAfterBulkSeed();
 
     res.json({
       success: true,
@@ -411,6 +415,7 @@ router.post('/merge-packaged-bulk', requireAdmin, async (req, res) => {
       skipDuplicateTitles: body.skipDuplicateTitles !== false,
       upsertCategories: body.upsertCategories !== false,
     });
+    await invalidateAfterBulkSeed();
 
     res.json({
       success: true,
@@ -449,6 +454,7 @@ router.post('/merge-questions-array', requireAdmin, async (req, res) => {
       skipDuplicateTitles: body.skipDuplicateTitles !== false,
       upsertCategories: body.upsertCategories !== false,
     });
+    await invalidateAfterBulkSeed();
 
     res.json({
       success: true,

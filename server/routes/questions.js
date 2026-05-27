@@ -1,39 +1,122 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
+const {
+  getAllQuestions,
+  maskPremiumForUser,
+} = require('../data/questionsCache');
+const { loadStaticQuestions } = require('../data/staticFallback');
+const { shouldUseStaticFallback } = require('../lib/firestoreErrors');
+const { invalidateAfterQuestionsWrite } = require('../lib/invalidateDataCache');
+const { applyCacheHeaders, setDataCacheSource } = require('../lib/cacheHeaders');
 
-// Utility to apply filters
-function applyFilters(queryRef, reqQuery) {
-  const { category, difficulty, isPremium, search } = reqQuery;
-  let filteredQuery = queryRef;
+async function loadQuestionsSafe() {
+  try {
+    return await getAllQuestions();
+  } catch (error) {
+    if (!shouldUseStaticFallback(error)) {
+      throw error;
+    }
+    console.error('[questions] Cache layer failed, static fallback:', error.message);
+    return { value: loadStaticQuestions(), source: 'fallback' };
+  }
+}
+
+function buildQuestionsListResponse(raw, req, res) {
+  const {
+    page = 1,
+    limit = 50,
+    sortBy = 'id',
+    sortOrder = 'asc',
+  } = req.query;
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+
+  let questions = filterQuestions(raw, req.query);
+  questions = maskPremiumForUser(questions, req.user);
+
+  questions.sort((a, b) => {
+    const valA = a[sortBy];
+    const valB = b[sortBy];
+    if (valA < valB) return sortOrder === 'desc' ? 1 : -1;
+    if (valA > valB) return sortOrder === 'desc' ? -1 : 1;
+    return 0;
+  });
+
+  const totalCount = questions.length;
+  const totalPages = Math.ceil(totalCount / limitNum) || 1;
+  const skip = (pageNum - 1) * limitNum;
+  questions = questions.slice(skip, skip + limitNum);
+
+  return {
+    success: true,
+    data: questions,
+    pagination: {
+      currentPage: pageNum,
+      totalPages,
+      totalCount,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+      limit: limitNum,
+    },
+    filters: {
+      category: req.query.category || 'All',
+      difficulty: req.query.difficulty || 'All',
+      isPremium: req.query.isPremium ?? 'All',
+      search: req.query.search || '',
+    },
+  };
+}
+
+function filterQuestions(questions, query) {
+  const { category, difficulty, isPremium, search } = query;
+  let result = questions;
 
   if (category && category !== 'All') {
-    filteredQuery = filteredQuery.where('category', '==', category);
+    result = result.filter((q) => q.category === category);
   }
   if (difficulty && difficulty !== 'All') {
-    filteredQuery = filteredQuery.where('difficulty', '==', difficulty);
+    result = result.filter((q) => q.difficulty === difficulty);
   }
-  if (isPremium === 'true' || isPremium === 'false') {
-    filteredQuery = filteredQuery.where('isPremium', '==', isPremium === 'true');
+  if (isPremium === 'true') {
+    result = result.filter((q) => q.isPremium === true);
+  } else if (isPremium === 'false') {
+    result = result.filter((q) => q.isPremium === false);
   }
-  
-  return filteredQuery;
+
+  if (search && String(search).trim()) {
+    const s = String(search).trim().toLowerCase();
+    result = result.filter((data) => {
+      const inTitle = (data.title || '').toLowerCase().includes(s);
+      const inQuestion = (data.question || '').toLowerCase().includes(s);
+      const inCategory = (data.category || '').toLowerCase().includes(s);
+      const inTags = (data.tags || []).some((t) => t.toLowerCase().includes(s));
+      const inCompanies = (data.companies || []).some((c) =>
+        String(c).toLowerCase().includes(s),
+      );
+      return inTitle || inQuestion || inCategory || inTags || inCompanies;
+    });
+  }
+
+  return result;
 }
 
 // GET /api/questions/stats/summary
 router.get('/stats/summary', async (req, res) => {
   try {
-    const snapshot = await db.collection('questions').get();
+    const { value: raw, source } = await loadQuestionsSafe();
+    setDataCacheSource(res, source);
+    applyCacheHeaders(res, { browserSeconds: 120, edgeSeconds: 300, isPublic: true });
+
     let totalQuestions = 0;
     let freeQuestions = 0;
     let premiumQuestions = 0;
     const difficultyStats = {};
     const categoryStats = {};
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
+    for (const data of raw) {
       totalQuestions++;
-      
       if (data.isPremium) premiumQuestions++;
       else freeQuestions++;
 
@@ -42,7 +125,7 @@ router.get('/stats/summary', async (req, res) => {
 
       const cat = data.category || 'Unknown';
       categoryStats[cat] = (categoryStats[cat] || 0) + 1;
-    });
+    }
 
     const byDifficulty = Object.entries(difficultyStats).map(([id, count]) => ({ _id: id, count }));
     const byCategory = Object.entries(categoryStats).map(([id, count]) => ({ _id: id, count }));
@@ -70,88 +153,22 @@ router.get('/stats/summary', async (req, res) => {
 // GET /api/questions
 router.get('/', async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 50,
-      sortBy = 'id',
-      sortOrder = 'asc',
-      search
-    } = req.query;
-
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
-
-    let queryRef = db.collection('questions');
-    queryRef = applyFilters(queryRef, reqQuery = req.query);
-
-    const snapshot = await queryRef.get();
-    let questions = [];
-
-    snapshot.forEach(doc => {
-      let data = doc.data();
-      
-      // Filter premium content to prevent dev-tool leaking if user hasn't paid
-      if (data.isPremium && (!req.user || !req.user.hasPaid)) {
-        data.code = "// Premium content locked";
-        data.answer = "Premium content locked";
-        data.explanation = "Premium content locked";
-      }
-
-      // Client-side search for substring matching (since Firestore doesn't support substring native queries)
-      if (search) {
-        const s = search.toLowerCase();
-        const inTitle = (data.title || '').toLowerCase().includes(s);
-        const inQuestion = (data.question || '').toLowerCase().includes(s);
-        const inCategory = (data.category || '').toLowerCase().includes(s);
-        const inTags = (data.tags || []).some(t => t.toLowerCase().includes(s));
-        const inCompanies = (data.companies || []).some(c =>
-          String(c).toLowerCase().includes(s)
-        );
-
-        if (inTitle || inQuestion || inCategory || inTags || inCompanies) {
-          questions.push({ ...data, firestoreId: doc.id });
-        }
-      } else {
-        questions.push({ ...data, firestoreId: doc.id });
-      }
-    });
-
-    // Sorting manually (since we combine filters that require complex indexes)
-    questions.sort((a, b) => {
-      let valA = a[sortBy];
-      let valB = b[sortBy];
-      if (valA < valB) return sortOrder === 'desc' ? 1 : -1;
-      if (valA > valB) return sortOrder === 'desc' ? -1 : 1;
-      return 0;
-    });
-
-    const totalCount = questions.length;
-    const totalPages = Math.ceil(totalCount / limitNum) || 1;
-    
-    // Pagination
-    const skip = (pageNum - 1) * limitNum;
-    questions = questions.slice(skip, skip + limitNum);
-
-    res.json({
-      success: true,
-      data: questions,
-      pagination: {
-        currentPage: pageNum,
-        totalPages,
-        totalCount,
-        hasNextPage: pageNum < totalPages,
-        hasPrevPage: pageNum > 1,
-        limit: limitNum,
-      },
-      filters: {
-        category: req.query.category || 'All',
-        difficulty: req.query.difficulty || 'All',
-        isPremium: req.query.isPremium ?? 'All',
-        search: req.query.search || '',
-      },
-    });
+    const { value: raw, source } = await loadQuestionsSafe();
+    setDataCacheSource(res, source);
+    applyCacheHeaders(res, { browserSeconds: 60 });
+    res.json(buildQuestionsListResponse(raw, req, res));
   } catch (error) {
     console.error('Error fetching questions:', error);
+    if (shouldUseStaticFallback(error)) {
+      try {
+        const raw = loadStaticQuestions();
+        setDataCacheSource(res, 'fallback');
+        applyCacheHeaders(res, { browserSeconds: 60 });
+        return res.json(buildQuestionsListResponse(raw, req, res));
+      } catch (fallbackError) {
+        console.error('Static fallback failed:', fallbackError);
+      }
+    }
     res.status(500).json({
       success: false,
       message: 'Error fetching questions',
@@ -164,28 +181,23 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const idParam = parseInt(req.params.id, 10);
-    const snapshot = await db.collection('questions').where('id', '==', idParam).limit(1).get();
+    const { value: raw, source } = await loadQuestionsSafe();
+    setDataCacheSource(res, source);
+    applyCacheHeaders(res, { browserSeconds: 60 });
 
-    if (snapshot.empty) {
+    const found = raw.find((q) => q.id === idParam);
+    if (!found) {
       return res.status(404).json({
         success: false,
         message: 'Question not found',
       });
     }
 
-    const doc = snapshot.docs[0];
-    let data = doc.data();
-
-    // Filter premium content to prevent dev-tool leaking if user hasn't paid
-    if (data.isPremium && (!req.user || !req.user.hasPaid)) {
-      data.code = "// Premium content locked";
-      data.answer = "Premium content locked";
-      data.explanation = "Premium content locked";
-    }
+    const [data] = maskPremiumForUser([found], req.user);
 
     res.json({
       success: true,
-      data: { ...data, firestoreId: doc.id },
+      data,
     });
   } catch (error) {
     console.error('Error fetching question:', error);
@@ -202,7 +214,6 @@ router.post('/', async (req, res) => {
   try {
     const { firestoreId: _omitFs, id: _omitId, ...questionData } = req.body || {};
 
-    // Get the highest ID
     const snapshot = await db.collection('questions').orderBy('id', 'desc').limit(1).get();
     let nextId = 1;
     if (!snapshot.empty) {
@@ -213,10 +224,11 @@ router.post('/', async (req, res) => {
       ...questionData,
       id: nextId,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     const docRef = await db.collection('questions').add(newQuestion);
+    await invalidateAfterQuestionsWrite();
 
     res.status(201).json({
       success: true,
@@ -247,17 +259,16 @@ router.put('/:id', async (req, res) => {
     }
 
     const docRef = snapshot.docs[0].ref;
-
     const { firestoreId: _omitFs, id: _omitId, ...body } = req.body || {};
 
     const updatedData = {
       ...body,
       updatedAt: new Date().toISOString(),
     };
-    // don't overwrite id
     if (updatedData.id) delete updatedData.id;
 
     await docRef.update(updatedData);
+    await invalidateAfterQuestionsWrite();
 
     const updatedDoc = await docRef.get();
 
@@ -291,6 +302,7 @@ router.delete('/:id', async (req, res) => {
 
     const doc = snapshot.docs[0];
     await doc.ref.delete();
+    await invalidateAfterQuestionsWrite();
 
     res.json({
       success: true,

@@ -26,7 +26,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true });
+  const { getTtlSeconds } = require("./lib/cache");
+  res.json({
+    ok: true,
+    cache: {
+      ttlSeconds: getTtlSeconds(),
+      redis: Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN),
+    },
+  });
 });
 
 module.exports = app;
