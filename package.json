@@ -1,0 +1,25 @@
+{
+  "name": "js-interview-prep",
+  "private": true,
+  "version": "1.0.0",
+  "description": "JavaScript interview prep — React client and Express API",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev:server": "npm run dev -w js-interview-server",
+    "start:server": "npm run start -w js-interview-server",
+    "dev:client": "dotenv -e .env -- npm run start -w js-interview-client",
+    "build:client": "dotenv -e .env -- npm run build -w js-interview-client",
+    "test:client": "dotenv -e .env -- npm run test -w js-interview-client"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "dotenv-cli": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

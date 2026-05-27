@@ -1,0 +1,35 @@
+# Dependencies (workspaces hoist to root; ignore any nested installs)
+node_modules/
+**/node_modules/
+
+# Build output
+client/build/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (never upload to GitHub)
+.env
+.env.local
+.env.*.local
+**/serviceAccountKey.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# IDE
+.idea/
+*.swp
+
+# Keep .vscode/settings.json for folder-scoped Git (do not ignore .vscode/)
+
+# Test / coverage
+coverage/
+
+# Upload zip from prepare script
+js-website-upload.zip

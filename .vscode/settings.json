@@ -1,0 +1,5 @@
+{
+  "git.autoRepositoryDetection": "openEditors",
+  "git.openRepositoryInParentFolders": "never",
+  "git.confirmSync": false
+}

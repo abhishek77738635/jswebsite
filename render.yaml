@@ -1,0 +1,19 @@
+# Optional: host only the API on Render (frontend can use Vercel).
+services:
+  - type: web
+    name: js-interview-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CASHFREE_CLIENT_ID
+        sync: false
+      - key: CASHFREE_CLIENT_SECRET
+        sync: false
+      - key: CASHFREE_ENVIRONMENT
+        value: sandbox
