@@ -4,6 +4,8 @@ const { requireAuth } = require('../middleware/auth');
 const { db } = require('../config/firebase');
 const { config, getCashfreeHeaders } = require('../lib/cashfree');
 
+const PREMIUM_PRICE_INR = Number(process.env.PREMIUM_PRICE_INR || 10);
+
 /** HTTPS base URL for Cashfree return_url (production requires https). */
 function resolveFrontendBaseUrl(req) {
   const fromEnv = String(process.env.FRONTEND_URL || '')
@@ -61,7 +63,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     const orderPayload = {
       order_id: orderId,
-      order_amount: 199.0,
+      order_amount: PREMIUM_PRICE_INR,
       order_currency: 'INR',
       customer_details: {
         customer_id: req.user.uid,
@@ -147,31 +149,88 @@ router.post('/create-order', requireAuth, async (req, res) => {
   }
 });
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function fetchCashfreeOrder(orderId) {
+  const response = await fetch(`${config.ordersUrl}/${encodeURIComponent(orderId)}`, {
+    method: 'GET',
+    headers: getCashfreeHeaders(),
+  });
+  const contentType = response.headers.get('content-type') || '';
+  const data =
+    contentType.includes('application/json') ? await response.json() : await response.text();
+  return { response, data };
+}
+
+function isOrderPaid(data) {
+  if (!data || typeof data !== 'object') return false;
+  if (data.order_status === 'PAID') return true;
+  const payments = data.payments || data.payment || [];
+  const list = Array.isArray(payments) ? payments : [payments];
+  return list.some((p) => p && (p.payment_status === 'SUCCESS' || p.payment_status === 'PAID'));
+}
+
 // POST /api/payment/verify
 router.post('/verify', requireAuth, async (req, res) => {
   try {
-    const { order_id } = req.body;
-
-    const response = await fetch(`${config.ordersUrl}/${order_id}`, {
-      method: 'GET',
-      headers: getCashfreeHeaders(),
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.order_status === 'PAID') {
-      await db.collection('users').doc(req.user.uid).update({
-        hasPaid: true,
-        updatedAt: new Date().toISOString(),
-      });
-
-      return res.json({ success: true, message: 'Payment verified and access granted!' });
+    const { order_id: orderId } = req.body;
+    if (!orderId || typeof orderId !== 'string') {
+      return res.status(400).json({ success: false, message: 'order_id is required' });
     }
+
+    if (!orderId.includes(req.user.uid)) {
+      return res.status(403).json({ success: false, message: 'Order does not belong to this user' });
+    }
+
+    const maxAttempts = 6;
+    let lastData = null;
+    let lastOk = false;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const { response, data } = await fetchCashfreeOrder(orderId);
+      lastData = data;
+      lastOk = response.ok;
+
+      if (response.ok && isOrderPaid(data)) {
+        await db.collection('users').doc(req.user.uid).set(
+          {
+            email: req.user.email,
+            displayName: req.user.name || req.user.email?.split('@')[0] || 'User',
+            hasPaid: true,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        );
+
+        return res.json({
+          success: true,
+          message: 'Payment verified and access granted!',
+          data: { hasPaid: true },
+        });
+      }
+
+      if (attempt < maxAttempts - 1) {
+        await sleep(1500);
+      }
+    }
+
+    const status =
+      typeof lastData === 'object' && lastData !== null
+        ? lastData.order_status
+        : undefined;
 
     return res.status(400).json({
       success: false,
-      message: 'Payment not successful',
-      status: data.order_status,
+      message:
+        status === 'ACTIVE'
+          ? 'Payment is still processing. Wait a moment and refresh the page.'
+          : 'Payment not successful',
+      status,
+      cashfreeMode: config.mode,
     });
   } catch (error) {
     console.error('Verify Order Error:', error);

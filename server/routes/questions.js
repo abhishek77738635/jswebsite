@@ -171,7 +171,9 @@ router.get('/', async (req, res) => {
   try {
     const { value: raw, source } = await loadQuestionsSafe();
     setDataCacheSource(res, source);
-    applyCacheHeaders(res, { browserSeconds: 60 });
+    // Per-user masking (hasPaid) — must not be cached across auth states
+    res.set('Cache-Control', 'no-store, private');
+    res.set('Vary', 'Authorization');
     res.json(buildQuestionsListResponse(raw, req, res));
   } catch (error) {
     console.error('Error fetching questions:', error);
@@ -179,7 +181,8 @@ router.get('/', async (req, res) => {
       try {
         const raw = loadStaticQuestions();
         setDataCacheSource(res, 'fallback');
-        applyCacheHeaders(res, { browserSeconds: 60 });
+        res.set('Cache-Control', 'no-store, private');
+        res.set('Vary', 'Authorization');
         return res.json(buildQuestionsListResponse(raw, req, res));
       } catch (fallbackError) {
         console.error('Static fallback failed:', fallbackError);
@@ -199,7 +202,8 @@ router.get('/:id', async (req, res) => {
     const idParam = parseInt(req.params.id, 10);
     const { value: raw, source } = await loadQuestionsSafe();
     setDataCacheSource(res, source);
-    applyCacheHeaders(res, { browserSeconds: 60 });
+    res.set('Cache-Control', 'no-store, private');
+    res.set('Vary', 'Authorization');
 
     const found = raw.find((q) => q.id === idParam);
     if (!found) {

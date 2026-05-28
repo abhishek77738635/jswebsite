@@ -17,6 +17,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import Spinner from '../components/Spinner';
 import BrandLogo from '../components/BrandLogo';
+import { formatPremiumPrice } from '../constants/pricing';
 
 const FEATURES = [
   {
@@ -154,7 +155,7 @@ function Login() {
                     Sign in to unlock premium
                   </p>
                   <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
-                    After signing in, you can pay ₹199 once to access all premium questions,
+                    After signing in, you can pay {formatPremiumPrice()} once to access all premium questions,
                     answers, and explanations.
                   </p>
                 </div>

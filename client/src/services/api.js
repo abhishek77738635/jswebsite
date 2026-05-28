@@ -13,6 +13,7 @@ class ApiService {
     }
 
     const config = {
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -152,6 +153,10 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ order_id })
     });
+  }
+
+  async getUserAccess() {
+    return this.request('/user/access');
   }
 
   // User progress/bookmarks/daily challenge

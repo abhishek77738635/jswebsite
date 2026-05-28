@@ -130,6 +130,11 @@ function Home() {
     const load = async () => {
       setLoading(true);
       setError(null);
+
+      if (!currentUser) {
+        setHasPaid(false);
+      }
+
       const params = buildQuestionParams(
         {
           selectedCategory,
@@ -174,7 +179,18 @@ function Home() {
           setPagination(questionsRes.pagination);
         }
 
-        setHasPaid(Boolean(questionsRes.access?.hasPaid));
+        let paid = Boolean(questionsRes.access?.hasPaid);
+        if (currentUser) {
+          try {
+            const accessRes = await apiService.getUserAccess();
+            if (accessRes?.success && accessRes.data) {
+              paid = Boolean(accessRes.data.hasPaid);
+            }
+          } catch (accessErr) {
+            console.warn('Could not refresh user access:', accessErr);
+          }
+        }
+        setHasPaid(paid);
       } catch (e) {
         if (!cancelled) {
           console.error(e);
@@ -192,7 +208,16 @@ function Home() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCategory, selectedDifficulty, showPremiumOnly, showFreeOnly, debouncedSearch, page, retryNonce]);
+  }, [
+    selectedCategory,
+    selectedDifficulty,
+    showPremiumOnly,
+    showFreeOnly,
+    debouncedSearch,
+    page,
+    retryNonce,
+    currentUser?.uid,
+  ]);
 
   useEffect(() => {
     if (skipPaginationScrollOnce.current) {
@@ -242,6 +267,7 @@ function Home() {
       toast.dismiss('verify');
       if (verifyRes.success) {
         toast.success('Payment successful! Premium content is unlocked.');
+        setHasPaid(true);
         setRetryNonce((n) => n + 1);
       } else {
         toast.error(verifyRes.message || 'Verification failed.');

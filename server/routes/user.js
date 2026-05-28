@@ -5,6 +5,16 @@ const { requireAuth } = require('../middleware/auth');
 const { getAllQuestions, maskPremiumForUser } = require('../data/questionsCache');
 const { getFreePreviewIds } = require('../lib/questionAccess');
 
+// GET /api/user/access — payment tier for the signed-in user
+router.get('/access', requireAuth, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      hasPaid: Boolean(req.user.hasPaid),
+    },
+  });
+});
+
 const USER_STATES_COLLECTION = 'user_question_states';
 const DAILY_SUBMISSIONS_COLLECTION = 'daily_challenge_submissions';
 const DIFFICULTY_ORDER = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];

@@ -17,8 +17,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { formatPremiumPrice } from '../constants/pricing';
 
 const LOCK_MARKERS = '// Premium content locked';
+const premiumPriceLabel = formatPremiumPrice();
 
 const QuestionCard = ({
   question,
@@ -133,7 +135,9 @@ const QuestionCard = ({
                     {!currentUser ? 'Sign in to continue' : 'Complete payment to unlock'}
                   </p>
                   <p className="mt-2 text-sm text-gray-300">
-                 {!currentUser ?  'Login and pay ₹199 to unlock all premium questions, answers and explanations.' : 'Pay ₹199 to unlock all premium questions, answers and explanations.'}
+                 {!currentUser
+                   ? `Login and pay ${premiumPriceLabel} to unlock all premium questions, answers and explanations.`
+                   : `Pay ${premiumPriceLabel} to unlock all premium questions, answers and explanations.`}
                   </p>
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
