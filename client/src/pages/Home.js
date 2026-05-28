@@ -10,11 +10,11 @@ import Spinner from '../components/Spinner';
 import apiService from '../services/api';
 import { Search, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import AppTabBar from '../components/AppTabBar';
-import { load } from '@cashfreepayments/cashfree-js';
 import { useAuth } from '../contexts/AuthContext';
+import { openCashfreeCheckout } from '../utils/cashfreeCheckout';
 import toast from 'react-hot-toast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
 const FREE_PREVIEW_COUNT = 10;
@@ -42,6 +42,8 @@ function buildQuestionParams(filters, page, debouncedSearch) {
 }
 
 function Home() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFiltersDesktopOpen, setIsFiltersDesktopOpen] = useState(true);
@@ -232,10 +234,44 @@ function Home() {
     };
   }, [currentUser, questions]);
 
+  const verifyOrderAndUnlock = useCallback(async (orderId) => {
+    if (!orderId) return;
+    toast.loading('Verifying payment…', { id: 'verify' });
+    try {
+      const verifyRes = await apiService.verifyPayment(orderId);
+      toast.dismiss('verify');
+      if (verifyRes.success) {
+        toast.success('Payment successful! Premium content is unlocked.');
+        setRetryNonce((n) => n + 1);
+      } else {
+        toast.error(verifyRes.message || 'Verification failed.');
+      }
+    } catch (err) {
+      toast.dismiss('verify');
+      console.error(err);
+      toast.error('Unable to verify payment. Contact support if you were charged.');
+    }
+  }, []);
+
+  useEffect(() => {
+    const orderId = searchParams.get('order_id');
+    const paymentSuccess = searchParams.get('payment_success');
+    if (!currentUser || !orderId || paymentSuccess !== 'true') return;
+
+    const params = new URLSearchParams(searchParams);
+    params.delete('order_id');
+    params.delete('payment_success');
+    setSearchParams(params, { replace: true });
+
+    verifyOrderAndUnlock(orderId);
+  }, [currentUser, searchParams, setSearchParams, verifyOrderAndUnlock]);
+
   const handlePremiumClick = useCallback(
     async () => {
       if (!currentUser) {
-        toast.error('Please sign in to unlock premium questions.');
+        navigate('/login', {
+          state: { from: location, reason: 'premium' },
+        });
         return;
       }
 
@@ -251,48 +287,34 @@ function Home() {
           return;
         }
 
-        const cashfreeEnv =
-          res.data.mode === 'production'
-            ? 'production'
-            : process.env.REACT_APP_CASHFREE_ENV === 'production'
-              ? 'production'
-              : 'sandbox';
-
-        const cashfree = await load({ mode: cashfreeEnv });
-
-        const checkoutOptions = {
-          paymentSessionId: res.data.payment_session_id,
-          redirectTarget: '_modal',
-        };
+        const mode = res.data.mode === 'production' ? 'production' : 'sandbox';
+        const orderId = res.data.order_id;
 
         toast.dismiss('pay');
 
-        cashfree.checkout(checkoutOptions).then(async (result) => {
-          if (result.error) {
-            console.error(result.error);
-            toast.error(
-              result.error.message ? `Payment: ${result.error.message}` : 'Payment was cancelled or failed.',
-            );
-            return;
-          }
-          if (result.paymentDetails) {
-            toast.loading('Verifying payment…', { id: 'verify' });
-            try {
-              const verifyRes = await apiService.verifyPayment(res.data.order_id);
-              toast.dismiss('verify');
-              if (verifyRes.success) {
-                toast.success('Payment successful! Premium content is unlocked.');
-                setRetryNonce((n) => n + 1);
-              } else {
-                toast.error(verifyRes.message || 'Verification failed.');
-              }
-            } catch (err) {
-              toast.dismiss('verify');
-              console.error(err);
-              toast.error('Unable to verify payment. Contact support if you were charged.');
-            }
-          }
+        const result = await openCashfreeCheckout({
+          paymentSessionId: res.data.payment_session_id,
+          mode,
         });
+
+        if (result?.usedRedirect || result?.redirect) {
+          toast('Opening secure payment page…', { icon: '🔒' });
+          return;
+        }
+
+        if (result?.error) {
+          console.error(result.error);
+          toast.error(
+            result.error.message
+              ? `Payment: ${result.error.message}`
+              : 'Payment was cancelled or failed.',
+          );
+          return;
+        }
+
+        if (result?.paymentDetails) {
+          await verifyOrderAndUnlock(orderId);
+        }
       } catch (err) {
         toast.dismiss('pay');
         console.error(err);
@@ -301,7 +323,7 @@ function Home() {
         setPaymentLoading(false);
       }
     },
-    [currentUser],
+    [currentUser, verifyOrderAndUnlock, navigate, location],
   );
 
   const resetFilters = () => {

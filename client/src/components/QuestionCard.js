@@ -142,7 +142,8 @@ const QuestionCard = ({
                       onClick={() => onPremiumClick(question.id)}
                       className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:brightness-110 sm:flex-none"
                     >
-                      Pay to unlock <ArrowRight className="h-4 w-4" aria-hidden />
+                      {!currentUser ? 'Sign in to unlock' : 'Pay to unlock'}{' '}
+                      <ArrowRight className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
                 </div>

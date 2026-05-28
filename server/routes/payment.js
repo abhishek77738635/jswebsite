@@ -4,10 +4,60 @@ const { requireAuth } = require('../middleware/auth');
 const { db } = require('../config/firebase');
 const { config, getCashfreeHeaders } = require('../lib/cashfree');
 
+/** HTTPS base URL for Cashfree return_url (production requires https). */
+function resolveFrontendBaseUrl(req) {
+  const fromEnv = String(process.env.FRONTEND_URL || '')
+    .trim()
+    .replace(/\/$/, '');
+  if (
+    fromEnv &&
+    fromEnv.startsWith('https://') &&
+    !/localhost|127\.0\.0\.1/i.test(fromEnv)
+  ) {
+    return fromEnv;
+  }
+
+  const origin = String(req.get('origin') || '')
+    .trim()
+    .replace(/\/$/, '');
+  if (origin.startsWith('https://')) {
+    return origin;
+  }
+
+  const referer = req.get('referer');
+  if (referer) {
+    try {
+      const u = new URL(referer);
+      if (u.protocol === 'https:') {
+        return `${u.protocol}//${u.host}`;
+      }
+    } catch {
+      /* ignore bad referer */
+    }
+  }
+
+  if (fromEnv && !config.isProduction) {
+    return fromEnv;
+  }
+
+  return fromEnv || 'http://localhost:5001';
+}
+
 // POST /api/payment/create-order
 router.post('/create-order', requireAuth, async (req, res) => {
   try {
     const orderId = `order_${req.user.uid}_${Date.now()}`;
+    const frontendBase = resolveFrontendBaseUrl(req);
+    const returnUrl = `${frontendBase}/?order_id=${orderId}&payment_success=true`;
+
+    if (config.isProduction && !returnUrl.startsWith('https://')) {
+      return res.status(500).json({
+        success: false,
+        message:
+          'Cashfree production requires an HTTPS return URL. Set FRONTEND_URL=https://jswebsite-client.vercel.app on the API host (Vercel env vars).',
+        cashfreeMode: config.mode,
+      });
+    }
 
     const orderPayload = {
       order_id: orderId,
@@ -19,7 +69,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
         customer_phone: '9999999999',
       },
       order_meta: {
-        return_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/?order_id=${orderId}&payment_success=true`,
+        return_url: returnUrl,
       },
     };
 
