@@ -216,7 +216,7 @@ function Home() {
     debouncedSearch,
     page,
     retryNonce,
-    currentUser?.uid,
+    currentUser,
   ]);
 
   useEffect(() => {
