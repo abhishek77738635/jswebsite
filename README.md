@@ -1,4 +1,6 @@
-# JS Interview Prep
+# Upchallenges
+
+Level Up Your Logic.
 
 React app + Express API for JavaScript interview questions (Firebase, Cashfree).
 

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import Spinner from '../components/Spinner';
+import BrandLogo from '../components/BrandLogo';
 
 function Login() {
   const { loginWithGoogle, currentUser } = useAuth();
@@ -58,9 +59,15 @@ function Login() {
         {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </button>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Sign in</h1>
+        <div className="flex justify-center">
+          <BrandLogo
+            titleClassName="text-2xl sm:text-3xl text-center"
+            sloganClassName="text-center text-sm text-gray-600 dark:text-gray-400"
+          />
+        </div>
+        <h2 className="mt-6 text-center text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Sign in</h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Unlock premium JavaScript interview questions after you sign in with Google.
+          Unlock premium questions and track your progress after you sign in with Google.
         </p>
       </div>
 

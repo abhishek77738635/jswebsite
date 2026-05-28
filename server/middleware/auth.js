@@ -21,6 +21,7 @@ async function verifyToken(req, res, next) {
       // Create user doc if it doesn't exist
       await db.collection('users').doc(decodedToken.uid).set({
         email: decodedToken.email,
+        displayName: decodedToken.name || decodedToken.email?.split('@')[0] || 'Anonymous',
         hasPaid: false,
         createdAt: new Date().toISOString()
       });
@@ -28,6 +29,7 @@ async function verifyToken(req, res, next) {
 
     req.user = {
       ...decodedToken,
+      name: decodedToken.name || decodedToken.email?.split('@')[0] || 'Anonymous',
       hasPaid
     };
     next();

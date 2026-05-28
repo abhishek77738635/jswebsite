@@ -1,11 +1,12 @@
 import React from 'react';
-import { Code, Menu, LogOut, User, LayoutDashboard, Search, Moon, Sun, RefreshCw } from 'lucide-react';
+import { Menu, LogOut, User, LayoutDashboard, Search, Moon, Sun, RefreshCw } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAdminUser } from '../constants/admin';
 
-const Header = ({ onMenuToggle, searchTerm, onSearchChange, isSearching }) => {
+const Header = ({ onMenuToggle, searchTerm, onSearchChange, isSearching, showFiltersMenu = true }) => {
   const { currentUser, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -21,17 +22,14 @@ const Header = ({ onMenuToggle, searchTerm, onSearchChange, isSearching }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 border-b border-gray-200 bg-white text-gray-900 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+    <header className="shrink-0 bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
       <div className="mx-auto max-w-[1600px] px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-            <Code className="h-7 w-7 shrink-0 text-blue-600 dark:text-blue-400 sm:h-8 sm:w-8" aria-hidden />
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-bold sm:text-lg">JS Interview Prep</h1>
-              <p className="hidden truncate text-xs text-gray-500 dark:text-gray-400 md:block">
-                Master JavaScript Interviews
-              </p>
-            </div>
+          <Link to="/" className="flex min-w-0 shrink-0">
+            <BrandLogo
+              showSlogan
+              sloganClassName="hidden truncate text-xs md:block"
+            />
           </Link>
 
           <div className="relative min-w-0 flex-1">
@@ -121,14 +119,16 @@ const Header = ({ onMenuToggle, searchTerm, onSearchChange, isSearching }) => {
               </Link>
             )}
 
-            <button
-              type="button"
-              onClick={onMenuToggle}
-              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
-              aria-label="Open filters"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+            {showFiltersMenu ? (
+              <button
+                type="button"
+                onClick={onMenuToggle}
+                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Toggle filters"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

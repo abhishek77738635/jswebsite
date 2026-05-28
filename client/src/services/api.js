@@ -22,10 +22,34 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const rawBody = await response.text();
+      const isJson = contentType.includes('application/json');
+
+      let data = null;
+      if (rawBody) {
+        if (isJson) {
+          data = JSON.parse(rawBody);
+        } else {
+          try {
+            data = JSON.parse(rawBody);
+          } catch (_error) {
+            data = null;
+          }
+        }
+      }
       
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        const fallbackMessage = rawBody
+          ? rawBody.slice(0, 140)
+          : `${response.status} ${response.statusText}`;
+        throw new Error(data?.message || fallbackMessage || 'Something went wrong');
+      }
+
+      if (!isJson && data == null) {
+        throw new Error(
+          `API returned non-JSON response from ${url}. Check API base URL or deployment routing.`,
+        );
       }
       
       return data;
@@ -129,6 +153,39 @@ class ApiService {
       body: JSON.stringify({ order_id })
     });
   }
+
+  // User progress/bookmarks/daily challenge
+  async getQuestionStates(questionIds = []) {
+    const ids = Array.isArray(questionIds) ? questionIds.filter((id) => id != null) : [];
+    const endpoint = ids.length ? `/user/states?ids=${ids.join(',')}` : '/user/states';
+    return this.request(endpoint);
+  }
+
+  async updateQuestionState(questionId, payload = {}) {
+    return this.request(`/user/questions/${questionId}/state`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getBookmarks() {
+    return this.request('/user/bookmarks');
+  }
+
+  async getProgressDashboard() {
+    return this.request('/user/dashboard');
+  }
+
+  async getDailyChallenge() {
+    return this.request('/user/daily-challenge');
+  }
+
+  async submitDailyChallenge(questionId) {
+    return this.request('/user/daily-challenge/submit', {
+      method: 'POST',
+      body: JSON.stringify({ questionId }),
+    });
+  }
 }
 
 // Create singleton instance
@@ -153,4 +210,10 @@ export const {
   mergePackagedBulkQuestions,
   createPaymentOrder,
   verifyPayment,
+  getQuestionStates,
+  updateQuestionState,
+  getBookmarks,
+  getProgressDashboard,
+  getDailyChallenge,
+  submitDailyChallenge,
 } = apiService;

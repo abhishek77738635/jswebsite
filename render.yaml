@@ -15,5 +15,6 @@ services:
         sync: false
       - key: CASHFREE_CLIENT_SECRET
         sync: false
+      # Must be "production" with live Cashfree credentials for real payments (not test cards)
       - key: CASHFREE_ENVIRONMENT
-        value: sandbox
+        sync: false

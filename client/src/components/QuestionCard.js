@@ -1,14 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Eye, EyeOff, Crown, Sparkles, Shield, ArrowRight } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Crown,
+  Sparkles,
+  Shield,
+  ArrowRight,
+  TerminalSquare,
+  Bookmark,
+  BookmarkCheck,
+  CheckCircle2,
+  Circle,
+  Save,
+  Loader2,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 
 const LOCK_MARKERS = '// Premium content locked';
 
-const QuestionCard = ({ question, onPremiumClick }) => {
+const QuestionCard = ({
+  question,
+  onPremiumClick,
+  onOpenCompiler,
+  userState = null,
+  onBookmarkToggle,
+  onSolvedToggle,
+  onSaveNote,
+  isActionPending = () => false,
+}) => {
   const [showAnswer, setShowAnswer] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(userState?.note || '');
   const { currentUser } = useAuth();
 
   const codeStr = typeof question.code === 'string' ? question.code.trim() : '';
@@ -17,6 +40,15 @@ const QuestionCard = ({ question, onPremiumClick }) => {
     codeStr === LOCK_MARKERS ||
     codeStr === 'Premium content locked' ||
     codeStr.endsWith('Premium content locked');
+  const isBookmarked = Boolean(userState?.bookmarked);
+  const isSolved = Boolean(userState?.solved);
+  const bookmarkLoading = isActionPending(question.id, 'bookmark');
+  const solvedLoading = isActionPending(question.id, 'solved');
+  const noteLoading = isActionPending(question.id, 'note');
+
+  useEffect(() => {
+    setNoteDraft(userState?.note || '');
+  }, [userState?.note]);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
@@ -101,32 +133,108 @@ const QuestionCard = ({ question, onPremiumClick }) => {
                     {!currentUser ? 'Sign in to continue' : 'Complete payment to unlock'}
                   </p>
                   <p className="mt-2 text-sm text-gray-300">
-                 Login and pay ₹199 to unlock all premium questions, answers and explanations.
+                 {!currentUser ?  'Login and pay ₹199 to unlock all premium questions, answers and explanations.' : 'Pay ₹199 to unlock all premium questions, answers and explanations.'}
                   </p>
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                    {!currentUser ? (
-                      <Link
-                        to="/login"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow hover:bg-gray-50 sm:flex-none"
-                      >
-                        Sign in with Google <ArrowRight className="h-4 w-4" aria-hidden />
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => onPremiumClick(question.id)}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:brightness-110 sm:flex-none"
-                      >
-                        Pay to unlock <ArrowRight className="h-4 w-4" aria-hidden />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => onPremiumClick(question.id)}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:brightness-110 sm:flex-none"
+                    >
+                      Pay to unlock <ArrowRight className="h-4 w-4" aria-hidden />
+                    </button>
                   </div>
                 </div>
               </div>
             ) : null}
           </div>
         </div>
+
+        {!isLocked ? (
+          <div className="mb-5 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenCompiler?.(question)}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-100 dark:hover:bg-indigo-950/60"
+              >
+                <TerminalSquare className="h-4 w-4" aria-hidden />
+                Open this question in compiler
+              </button>
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={bookmarkLoading || solvedLoading}
+                    onClick={() => onBookmarkToggle?.(question.id, !isBookmarked)}
+                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isBookmarked
+                        ? 'bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-200'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                    }`}
+                  >
+                    {bookmarkLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                    ) : isBookmarked ? (
+                      <BookmarkCheck className="h-3.5 w-3.5" />
+                    ) : (
+                      <Bookmark className="h-3.5 w-3.5" />
+                    )}
+                    {bookmarkLoading ? 'Saving…' : isBookmarked ? 'Bookmarked' : 'Bookmark'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bookmarkLoading || solvedLoading}
+                    onClick={() => onSolvedToggle?.(question.id, !isSolved)}
+                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isSolved
+                        ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                    }`}
+                  >
+                    {solvedLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                    ) : isSolved ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5" />
+                    )}
+                    {solvedLoading ? 'Saving…' : isSolved ? 'Solved' : 'Mark solved'}
+                  </button>
+                </>
+              ) : null}
+            </div>
+            {currentUser ? (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-950">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Personal note
+                </label>
+                <textarea
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  className="h-20 w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  placeholder="Write your own approach, edge cases, and reminders..."
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={noteLoading}
+                    onClick={() => onSaveNote?.(question.id, noteDraft)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {noteLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    {noteLoading ? 'Saving…' : 'Save note'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Answer */}
         {!isLocked ? (

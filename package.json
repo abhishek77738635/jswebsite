@@ -2,16 +2,17 @@
   "name": "js-interview-prep",
   "private": true,
   "version": "1.0.0",
-  "description": "JavaScript interview prep — React client and Express API",
+  "description": "Upchallenges — Level Up Your Logic. JavaScript challenges with React client and Express API",
   "workspaces": [
     "client",
     "server"
   ],
   "scripts": {
     "install:all": "npm install",
-    "dev:server": "npm run dev -w js-interview-server",
+    "dev:server": "npx --yes kill-port 5100 2>/dev/null || true; PORT=5100 npm run dev -w js-interview-server",
     "start:server": "npm run start -w js-interview-server",
     "dev:client": "dotenv -e .env -- npm run start -w js-interview-client",
+    "check:cashfree": "node scripts/check-cashfree.js",
     "build:client": "dotenv -e .env -- npm run build -w js-interview-client",
     "test:client": "dotenv -e .env -- npm run test -w js-interview-client"
   },
