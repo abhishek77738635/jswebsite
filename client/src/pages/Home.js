@@ -8,8 +8,9 @@ import ProgressDashboardPanel from '../components/ProgressDashboardPanel';
 import DailyChallengePanel from '../components/DailyChallengePanel';
 import Spinner from '../components/Spinner';
 import apiService from '../services/api';
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import AppTabBar from '../components/AppTabBar';
+import SiteFooter from '../components/SiteFooter';
 import { useAuth } from '../contexts/AuthContext';
 import { openCashfreeCheckout } from '../utils/cashfreeCheckout';
 import toast from 'react-hot-toast';
@@ -44,8 +45,6 @@ function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isFiltersDesktopOpen, setIsFiltersDesktopOpen] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [showPremiumOnly, setShowPremiumOnly] = useState(false);
@@ -307,6 +306,18 @@ function Home() {
         return;
       }
 
+      try {
+        const accessRes = await apiService.getUserAccess();
+        const phone = accessRes?.data?.phone;
+        if (!phone) {
+          toast.error('Add your phone number in Profile before paying.');
+          window.dispatchEvent(new CustomEvent('open-profile'));
+          return;
+        }
+      } catch (accessErr) {
+        console.warn('Could not verify phone before payment:', accessErr);
+      }
+
       toast.loading('Opening checkout…', { id: 'pay' });
 
       try {
@@ -315,7 +326,11 @@ function Home() {
 
         if (!res.success || !res.data?.payment_session_id) {
           toast.dismiss('pay');
-          toast.error(typeof res.message === 'string' ? res.message : 'Could not start payment.');
+          const message = typeof res.message === 'string' ? res.message : 'Could not start payment.';
+          toast.error(message);
+          if (res.code === 'PHONE_REQUIRED') {
+            window.dispatchEvent(new CustomEvent('open-profile'));
+          }
           return;
         }
 
@@ -350,7 +365,11 @@ function Home() {
       } catch (err) {
         toast.dismiss('pay');
         console.error(err);
-        toast.error(err.message || 'Error starting payment.');
+        const message = err.message || 'Error starting payment.';
+        toast.error(message);
+        if (/phone/i.test(message)) {
+          window.dispatchEvent(new CustomEvent('open-profile'));
+        }
       } finally {
         setPaymentLoading(false);
       }
@@ -540,20 +559,10 @@ function Home() {
 
   const sidebarStats = loading ? null : { listed: questions.length, total: pagination.totalCount };
 
-  const handleFiltersToggle = () => {
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
-      setIsFiltersDesktopOpen((open) => !open);
-      return;
-    }
-    setIsSidebarOpen((open) => !open);
-  };
-
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
       <div className="sticky top-0 z-50 shrink-0 border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <Header
-          onMenuToggle={handleFiltersToggle}
-          showFiltersMenu={activeTab === 'questions'}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           isSearching={searchTerm !== debouncedSearch}
@@ -561,13 +570,9 @@ function Home() {
         <AppTabBar activeTab={activeTab} onTabChange={switchTab} />
       </div>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col lg:flex-row">
         {activeTab === 'questions' ? (
           <Sidebar
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            desktopOpen={isFiltersDesktopOpen}
-            onDesktopClose={() => setIsFiltersDesktopOpen(false)}
             selectedCategory={selectedCategory}
             onCategoryChange={(v) => setSelectedCategory(v)}
             selectedDifficulty={selectedDifficulty}
@@ -592,9 +597,7 @@ function Home() {
           {activeTab === 'compiler' ? (
             <div id="compiler" className="space-y-4">
               <CodeRunnerSandbox seed={compilerSeed} />
-              <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
-                <p>&copy; 2026 Upchallenges. Level Up Your Logic.</p>
-              </footer>
+              <SiteFooter className="mt-12" />
             </div>
           ) : activeTab === 'bookmarks' ? (
             <div className="space-y-4">
@@ -623,9 +626,7 @@ function Home() {
                   }
                 />
               )}
-              <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
-                <p>&copy; 2026 Upchallenges. Level Up Your Logic.</p>
-              </footer>
+              <SiteFooter className="mt-12" />
             </div>
           ) : activeTab === 'dashboard' ? (
             <div className="space-y-4">
@@ -641,9 +642,7 @@ function Home() {
                   onReload={reloadDashboard}
                 />
               )}
-              <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
-                <p>&copy; 2026 Upchallenges. Level Up Your Logic.</p>
-              </footer>
+              <SiteFooter className="mt-12" />
             </div>
           ) : activeTab === 'daily' ? (
             <div className="space-y-4">
@@ -657,9 +656,7 @@ function Home() {
                 onSubmitSolved={handleDailySubmit}
                 submitLoading={dailySubmitLoading}
               />
-              <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
-                <p>&copy; 2026 Upchallenges. Level Up Your Logic.</p>
-              </footer>
+              <SiteFooter className="mt-12" />
             </div>
           ) : (
             <>
@@ -669,16 +666,6 @@ function Home() {
                     <h2 id="questions" className="text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
                       JavaScript challenges
                     </h2>
-                    {!isFiltersDesktopOpen ? (
-                      <button
-                        type="button"
-                        onClick={() => setIsFiltersDesktopOpen(true)}
-                        className="hidden items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 lg:inline-flex"
-                      >
-                        <Filter className="h-4 w-4" aria-hidden />
-                        Show filters
-                      </button>
-                    ) : null}
                   </div>
                   {hasActiveFilters ? (
                     <button
@@ -833,9 +820,7 @@ function Home() {
                 </nav>
               ) : null}
 
-              <footer className="mt-12 border-t border-gray-200 pt-8 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500">
-                <p>&copy; 2026 Upchallenges. Level Up Your Logic.</p>
-              </footer>
+              <SiteFooter className="mt-12" />
             </>
           )}
         </main>

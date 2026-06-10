@@ -1,5 +1,5 @@
 import React from 'react';
-import { Filter, X } from 'lucide-react';
+import { Filter } from 'lucide-react';
 
 function FilterPanelBody({
   selectedCategory,
@@ -15,7 +15,7 @@ function FilterPanelBody({
   stats,
 }) {
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-8">
+    <div className="space-y-6 p-4 pb-8 lg:flex-1 lg:overflow-y-auto">
       <section>
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Category</h3>
         <div className="space-y-2">
@@ -106,12 +106,12 @@ function FilterPanelBody({
               <dt>This page</dt>
               <dd className="font-medium text-gray-900 dark:text-gray-100">{stats.listed ?? '—'}</dd>
             </div>
-            {stats.total != null && (
+            {stats.total != null ? (
               <div className="flex justify-between gap-2">
                 <dt>Total matching</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">{stats.total}</dd>
               </div>
-            )}
+            ) : null}
           </dl>
         </div>
       ) : null}
@@ -120,10 +120,6 @@ function FilterPanelBody({
 }
 
 export default function Sidebar({
-  isOpen,
-  onClose,
-  desktopOpen = true,
-  onDesktopClose,
   selectedCategory,
   onCategoryChange,
   selectedDifficulty,
@@ -151,64 +147,14 @@ export default function Sidebar({
   };
 
   return (
-    <>
-      {isOpen ? (
-        <button
-          type="button"
-          className="fixed inset-x-0 bottom-0 top-[7.75rem] z-40 bg-black/40 lg:hidden"
-          aria-label="Close filters backdrop"
-          onClick={onClose}
-        />
-      ) : null}
-
-      <aside
-        className={[
-          'fixed left-0 top-[7.75rem] z-50 flex h-[calc(100vh-7.75rem)] w-[min(88vw,18rem)] -translate-x-full flex-col bg-white shadow-xl transition-transform duration-200 ease-out dark:bg-gray-900 lg:hidden',
-          isOpen ? 'translate-x-0' : '',
-        ].join(' ')}
-        aria-hidden={!isOpen}
-      >
-        <div className="shrink-0 border-b border-gray-100 p-4 dark:border-gray-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden />
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Close filters"
-            >
-              <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
+    <aside className="w-full shrink-0 border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-[7.75rem] lg:z-30 lg:flex lg:h-[calc(100vh-7.75rem)] lg:w-64 lg:flex-col lg:self-start lg:border-b-0 lg:border-r lg:overflow-hidden">
+      <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+        <div className="flex items-center gap-2">
+          <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden />
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
         </div>
-        <FilterPanelBody {...panelProps} />
-      </aside>
-
-      {desktopOpen ? (
-        <aside className="relative hidden shrink-0 border-r border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-[7.75rem] lg:z-30 lg:flex lg:h-[calc(100vh-7.75rem)] lg:w-64 lg:flex-col lg:self-start lg:overflow-hidden">
-          <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden />
-                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
-              </div>
-              <button
-                type="button"
-                onClick={onDesktopClose}
-                className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                aria-label="Close filters panel"
-                title="Close filters"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          <FilterPanelBody {...panelProps} />
-        </aside>
-      ) : null}
-    </>
+      </div>
+      <FilterPanelBody {...panelProps} />
+    </aside>
   );
 }

@@ -5,6 +5,7 @@ const { db } = require('../config/firebase');
 const { config, getCashfreeHeaders } = require('../lib/cashfree');
 
 const PREMIUM_PRICE_INR = Number(process.env.PREMIUM_PRICE_INR || 10);
+const { isValidIndianPhone, normalizeIndianPhone } = require('../lib/phone');
 
 /** HTTPS base URL for Cashfree return_url (production requires https). */
 function resolveFrontendBaseUrl(req) {
@@ -61,6 +62,15 @@ router.post('/create-order', requireAuth, async (req, res) => {
       });
     }
 
+    const customerPhone = normalizeIndianPhone(req.user.phone);
+    if (!isValidIndianPhone(customerPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Add a valid phone number in your profile before paying.',
+        code: 'PHONE_REQUIRED',
+      });
+    }
+
     const orderPayload = {
       order_id: orderId,
       order_amount: PREMIUM_PRICE_INR,
@@ -68,7 +78,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
       customer_details: {
         customer_id: req.user.uid,
         customer_email: req.user.email || 'customer@example.com',
-        customer_phone: '9999999999',
+        customer_phone: customerPhone,
       },
       order_meta: {
         return_url: returnUrl,

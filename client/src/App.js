@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import Home from './pages/Home';
 import AdminPortal from './pages/AdminPortal';
 import Login from './pages/Login';
+import HelpCenter from './pages/HelpCenter';
+import Terms from './pages/Terms';
 import { useAuth } from './contexts/AuthContext';
 import { isAdminUser } from './constants/admin';
 import toast from 'react-hot-toast';
@@ -53,6 +55,8 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/help" element={<HelpCenter />} />
+      <Route path="/terms" element={<Terms />} />
       <Route
         path="/admin"
         element={

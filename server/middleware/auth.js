@@ -14,23 +14,27 @@ async function verifyToken(req, res, next) {
     // Fetch user from Firestore to check payment status
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
     let hasPaid = false;
-    
+    let phone = '';
+
     if (userDoc.exists) {
-      hasPaid = userDoc.data().hasPaid || false;
+      const data = userDoc.data();
+      hasPaid = data.hasPaid || false;
+      phone = data.phone || '';
     } else {
-      // Create user doc if it doesn't exist
       await db.collection('users').doc(decodedToken.uid).set({
         email: decodedToken.email,
         displayName: decodedToken.name || decodedToken.email?.split('@')[0] || 'Anonymous',
         hasPaid: false,
-        createdAt: new Date().toISOString()
+        phone: '',
+        createdAt: new Date().toISOString(),
       });
     }
 
     req.user = {
       ...decodedToken,
       name: decodedToken.name || decodedToken.email?.split('@')[0] || 'Anonymous',
-      hasPaid
+      hasPaid,
+      phone,
     };
     next();
   } catch (error) {

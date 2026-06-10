@@ -4,6 +4,20 @@ const { db } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { getAllQuestions, maskPremiumForUser } = require('../data/questionsCache');
 const { getFreeQuestionIds } = require('../lib/questionAccess');
+const { normalizeIndianPhone, isValidIndianPhone } = require('../lib/phone');
+
+function buildProfilePayload(user, docData = {}) {
+  return {
+    uid: user.uid,
+    email: user.email || docData.email || '',
+    displayName: docData.displayName || user.name || user.email?.split('@')[0] || 'User',
+    photoURL: user.picture || docData.photoURL || '',
+    phone: docData.phone || user.phone || '',
+    hasPaid: Boolean(docData.hasPaid ?? user.hasPaid),
+    createdAt: docData.createdAt || null,
+    updatedAt: docData.updatedAt || null,
+  };
+}
 
 // GET /api/user/access — payment tier for the signed-in user
 router.get('/access', requireAuth, (req, res) => {
@@ -11,8 +25,67 @@ router.get('/access', requireAuth, (req, res) => {
     success: true,
     data: {
       hasPaid: Boolean(req.user.hasPaid),
+      phone: req.user.phone || '',
     },
   });
+});
+
+// GET /api/user/profile
+router.get('/profile', requireAuth, async (req, res) => {
+  try {
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
+    const docData = userDoc.exists ? userDoc.data() : {};
+    res.json({
+      success: true,
+      data: buildProfilePayload(req.user, docData),
+    });
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    res.status(500).json({ success: false, message: 'Failed to load profile', error: error.message });
+  }
+});
+
+// PUT /api/user/profile
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { phone } = req.body || {};
+    if (phone == null || String(phone).trim() === '') {
+      return res.status(400).json({ success: false, message: 'Phone number is required' });
+    }
+
+    if (!isValidIndianPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a valid 10-digit Indian mobile number (starts with 6–9).',
+      });
+    }
+
+    const normalizedPhone = normalizeIndianPhone(phone);
+    const nowIso = new Date().toISOString();
+    const userRef = db.collection('users').doc(req.user.uid);
+
+    await userRef.set(
+      {
+        email: req.user.email,
+        displayName: req.user.name || req.user.email?.split('@')[0] || 'User',
+        phone: normalizedPhone,
+        updatedAt: nowIso,
+      },
+      { merge: true },
+    );
+
+    const updatedDoc = await userRef.get();
+    const docData = updatedDoc.exists ? updatedDoc.data() : {};
+
+    res.json({
+      success: true,
+      message: 'Profile updated',
+      data: buildProfilePayload({ ...req.user, phone: normalizedPhone }, docData),
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
+  }
 });
 
 const USER_STATES_COLLECTION = 'user_question_states';

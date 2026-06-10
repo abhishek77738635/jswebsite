@@ -215,8 +215,15 @@ function Login() {
             </button>
 
             <p className="mt-6 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-500">
-              By continuing, you agree to use Upchallenges for personal learning. Payment is
-              processed securely via Cashfree.
+              By continuing, you agree to our{' '}
+              <Link to="/terms" className="font-medium text-violet-600 hover:underline dark:text-violet-400">
+                Terms &amp; Conditions
+              </Link>
+              . Payment is processed securely via Cashfree. Need help?{' '}
+              <Link to="/help" className="font-medium text-violet-600 hover:underline dark:text-violet-400">
+                Help Center
+              </Link>
+              .
             </p>
           </div>
 

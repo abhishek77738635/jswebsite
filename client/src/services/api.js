@@ -159,6 +159,17 @@ class ApiService {
     return this.request('/user/access');
   }
 
+  async getUserProfile() {
+    return this.request('/user/profile');
+  }
+
+  async updateUserProfile(payload = {}) {
+    return this.request('/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
   // User progress/bookmarks/daily challenge
   async getQuestionStates(questionIds = []) {
     const ids = Array.isArray(questionIds) ? questionIds.filter((id) => id != null) : [];
