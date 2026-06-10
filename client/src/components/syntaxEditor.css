@@ -1,0 +1,112 @@
+.syntax-editor-highlight,
+.syntax-editor-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  tab-size: 2;
+}
+
+.syntax-editor-highlight {
+  pointer-events: none;
+  margin: 0;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+}
+
+.syntax-editor-highlight.wrap,
+.syntax-editor-input.wrap {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.syntax-editor-input {
+  caret-color: #3b82f6;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: transparent;
+}
+
+.syntax-editor-input::selection {
+  background: rgba(59, 130, 246, 0.35);
+}
+
+.dark .syntax-editor-input::selection {
+  background: rgba(96, 165, 250, 0.4);
+}
+
+.syntax-editor-highlight .js-hl-keyword {
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.syntax-editor-highlight .js-hl-function {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.syntax-editor-highlight .js-hl-variable {
+  color: #db2777;
+}
+
+.syntax-editor-highlight .js-hl-builtin {
+  color: #d97706;
+  font-weight: 500;
+}
+
+.syntax-editor-highlight .js-hl-class {
+  color: #ca8a04;
+  font-weight: 600;
+}
+
+.syntax-editor-highlight .js-hl-string {
+  color: #16a34a;
+}
+
+.syntax-editor-highlight .js-hl-number {
+  color: #ea580c;
+}
+
+.syntax-editor-highlight .js-hl-comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.syntax-editor-highlight .js-hl-operator {
+  color: #0891b2;
+}
+
+.dark .syntax-editor-highlight .js-hl-keyword {
+  color: #c084fc;
+}
+
+.dark .syntax-editor-highlight .js-hl-function {
+  color: #60a5fa;
+}
+
+.dark .syntax-editor-highlight .js-hl-variable {
+  color: #f472b6;
+}
+
+.dark .syntax-editor-highlight .js-hl-builtin {
+  color: #fbbf24;
+}
+
+.dark .syntax-editor-highlight .js-hl-class {
+  color: #facc15;
+}
+
+.dark .syntax-editor-highlight .js-hl-string {
+  color: #4ade80;
+}
+
+.dark .syntax-editor-highlight .js-hl-number {
+  color: #fb923c;
+}
+
+.dark .syntax-editor-highlight .js-hl-comment {
+  color: #9ca3af;
+}
+
+.dark .syntax-editor-highlight .js-hl-operator {
+  color: #22d3ee;
+}

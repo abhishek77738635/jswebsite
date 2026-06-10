@@ -211,6 +211,41 @@ function computeStreaks(states) {
   return { current, best, solvedDates };
 }
 
+function buildDailyActivity(states, days = 14) {
+  const counts = {};
+  for (const state of states) {
+    if (!state.solved || !state.firstSolvedAt) continue;
+    const dateKey = String(state.firstSolvedAt).slice(0, 10);
+    counts[dateKey] = (counts[dateKey] || 0) + 1;
+  }
+
+  const result = [];
+  const today = new Date();
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    date.setUTCDate(date.getUTCDate() - offset);
+    const key = date.toISOString().slice(0, 10);
+    result.push({ date: key, count: counts[key] || 0 });
+  }
+  return result;
+}
+
+function buildCumulativeProgress(states) {
+  const byDate = {};
+  for (const state of states) {
+    if (!state.solved || !state.firstSolvedAt) continue;
+    const dateKey = String(state.firstSolvedAt).slice(0, 10);
+    byDate[dateKey] = (byDate[dateKey] || 0) + 1;
+  }
+
+  const dates = Object.keys(byDate).sort();
+  let cumulative = 0;
+  return dates.map((date) => {
+    cumulative += byDate[date];
+    return { date, count: byDate[date], cumulative };
+  });
+}
+
 async function loadQuestionCatalogForUser(user) {
   const { value: raw } = await getAllQuestions();
   const freeQuestionIds = getFreeQuestionIds(raw);
@@ -446,11 +481,13 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const streak = computeStreaks(solvedStates);
     const notesCount = states.filter((state) => typeof state.note === 'string' && state.note.trim()).length;
     const bookmarksCount = states.filter((state) => state.bookmarked === true).length;
+    const totalQuestions = catalog.raw.length;
+    const solvedCount = solvedQuestions.length;
 
     res.json({
       success: true,
       data: {
-        solvedCount: solvedQuestions.length,
+        solvedCount,
         bookmarkedCount: bookmarksCount,
         notesCount,
         streakCurrent: streak.current,
@@ -460,6 +497,13 @@ router.get('/dashboard', requireAuth, async (req, res) => {
         weakAreas,
         heatmap,
         timeline: streak.solvedDates,
+        dailyActivity: buildDailyActivity(solvedStates, 14),
+        cumulativeProgress: buildCumulativeProgress(solvedStates),
+        overallProgress: {
+          solved: solvedCount,
+          total: totalQuestions,
+          percent: totalQuestions > 0 ? solvedCount / totalQuestions : 0,
+        },
       },
     });
   } catch (error) {

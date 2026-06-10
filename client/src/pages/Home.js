@@ -6,6 +6,9 @@ import CodeRunnerSandbox from '../components/CodeRunnerSandbox';
 import BookmarksPanel from '../components/BookmarksPanel';
 import ProgressDashboardPanel from '../components/ProgressDashboardPanel';
 import DailyChallengePanel from '../components/DailyChallengePanel';
+import LearnTheoryPanel from '../components/LearnTheoryPanel';
+import LearnTopicsSidebar from '../components/LearnTopicsSidebar';
+import { JS_THEORY_TOPICS } from '../constants/jsTheory';
 import Spinner from '../components/Spinner';
 import apiService from '../services/api';
 import { Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -18,7 +21,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
-const TAB_KEYS = ['questions', 'compiler', 'bookmarks', 'dashboard', 'daily'];
+const TAB_KEYS = ['questions', 'learn', 'compiler', 'bookmarks', 'dashboard', 'daily'];
 
 const DIFFICULTY_SORT_ORDER = { All: 0, Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 };
 
@@ -48,7 +51,7 @@ function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [showPremiumOnly, setShowPremiumOnly] = useState(false);
-  const [showFreeOnly, setShowFreeOnly] = useState(false);
+  const [showFreeOnly, setShowFreeOnly] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebouncedValue(searchTerm, 400);
 
@@ -72,6 +75,7 @@ function Home() {
     TAB_KEYS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'questions',
   );
   const [compilerSeed, setCompilerSeed] = useState(null);
+  const [learnTopicId, setLearnTopicId] = useState(JS_THEORY_TOPICS[0]?.id);
   const [questionStates, setQuestionStates] = useState({});
   const [bookmarks, setBookmarks] = useState([]);
   const [bookmarksLoading, setBookmarksLoading] = useState(false);
@@ -381,10 +385,10 @@ function Home() {
     setSelectedCategory('All');
     setSelectedDifficulty('All');
     setShowPremiumOnly(false);
-    setShowFreeOnly(false);
+    setShowFreeOnly(true);
     setSearchTerm('');
     setPage(1);
-    toast.success('Filters cleared.');
+    toast.success('Filters reset to free questions.');
   };
 
   const retryConnection = () => setRetryNonce((c) => c + 1);
@@ -419,6 +423,19 @@ function Home() {
       };
       setCompilerSeed(seed);
       switchTab('compiler', question.id);
+    },
+    [switchTab],
+  );
+
+  const openExampleInCompiler = useCallback(
+    (code, title) => {
+      setCompilerSeed({
+        id: 'theory',
+        title: title || 'Theory example',
+        prompt: 'Run this JavaScript theory example in the sandbox.',
+        starterCode: typeof code === 'string' ? code : '',
+      });
+      switchTab('compiler');
     },
     [switchTab],
   );
@@ -554,7 +571,7 @@ function Home() {
     selectedCategory !== 'All' ||
     selectedDifficulty !== 'All' ||
     showPremiumOnly ||
-    showFreeOnly ||
+    !showFreeOnly ||
     searchTerm;
 
   const sidebarStats = loading ? null : { listed: questions.length, total: pagination.totalCount };
@@ -591,10 +608,17 @@ function Home() {
             difficulties={difficulties}
             stats={sidebarStats}
           />
+        ) : activeTab === 'learn' ? (
+          <LearnTopicsSidebar activeTopicId={learnTopicId} onTopicChange={setLearnTopicId} />
         ) : null}
 
         <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {activeTab === 'compiler' ? (
+          {activeTab === 'learn' ? (
+            <div className="space-y-4">
+              <LearnTheoryPanel activeTopicId={learnTopicId} onTryExample={openExampleInCompiler} />
+              <SiteFooter className="mt-12" />
+            </div>
+          ) : activeTab === 'compiler' ? (
             <div id="compiler" className="space-y-4">
               <CodeRunnerSandbox seed={compilerSeed} />
               <SiteFooter className="mt-12" />

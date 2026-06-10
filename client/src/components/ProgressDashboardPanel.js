@@ -1,6 +1,13 @@
 import React from 'react';
-import { Flame, Bookmark, StickyNote, Trophy, ChartBar, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Flame, Bookmark, StickyNote, Trophy, ChartBar, AlertTriangle, RefreshCw, TrendingUp, CalendarDays } from 'lucide-react';
 import Spinner from './Spinner';
+import {
+  ProgressDonut,
+  DailyActivityChart,
+  CumulativeProgressChart,
+  DifficultyProgressChart,
+  CategoryProgressChart,
+} from './DashboardCharts';
 
 function percentage(value) {
   return `${Math.round((value || 0) * 100)}%`;
@@ -71,54 +78,50 @@ export default function ProgressDashboardPanel({ data, loading = false, error = 
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                <ChartBar className="h-4 w-4" />
-                Solved by topic
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                Overall progress
               </div>
-              <div className="space-y-2">
-                {(data.solvedByCategory || []).slice(0, 8).map((row) => {
-                  const ratio = row.total > 0 ? row.solved / row.total : 0;
-                  return (
-                    <div key={`cat-${row.name}`}>
-                      <div className="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>{row.name}</span>
-                        <span>
-                          {row.solved}/{row.total}
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                        <div className="h-2 rounded-full bg-blue-600" style={{ width: `${Math.max(5, Math.round(ratio * 100))}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <ProgressDonut
+                percent={data.overallProgress?.percent ?? 0}
+                solved={data.overallProgress?.solved ?? data.solvedCount ?? 0}
+                total={data.overallProgress?.total ?? 0}
+              />
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <CalendarDays className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                Daily activity
+              </div>
+              <DailyActivityChart data={data.dailyActivity || []} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              Cumulative progress
+            </div>
+            <CumulativeProgressChart data={data.cumulativeProgress || []} />
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                 <ChartBar className="h-4 w-4" />
-                Solved by difficulty
+                Progress by topic
               </div>
-              <div className="space-y-2">
-                {(data.solvedByDifficulty || []).map((row) => {
-                  const ratio = row.total > 0 ? row.solved / row.total : 0;
-                  return (
-                    <div key={`diff-${row.name}`}>
-                      <div className="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>{row.name}</span>
-                        <span>
-                          {row.solved}/{row.total}
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                        <div className="h-2 rounded-full bg-violet-600" style={{ width: `${Math.max(5, Math.round(ratio * 100))}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <CategoryProgressChart rows={data.solvedByCategory || []} />
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <ChartBar className="h-4 w-4" />
+                Progress by difficulty
               </div>
+              <DifficultyProgressChart rows={data.solvedByDifficulty || []} />
             </div>
           </div>
 

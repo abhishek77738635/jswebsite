@@ -1,8 +1,9 @@
 import React from 'react';
-import { ListChecks, Code2, Bookmark, BarChart3, CalendarDays } from 'lucide-react';
+import { ListChecks, Code2, Bookmark, BarChart3, CalendarDays, GraduationCap } from 'lucide-react';
 
 const TABS = [
   { id: 'questions', label: 'Questions', icon: ListChecks },
+  { id: 'learn', label: 'Learn', icon: GraduationCap },
   { id: 'compiler', label: 'Compiler', icon: Code2 },
   { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -11,7 +12,8 @@ const TABS = [
 
 const TAB_HINTS = {
   questions: 'Browse challenges and open any in the compiler.',
-  compiler: 'Run and test snippets safely in-browser.',
+  learn: 'JS Forge — theory, diagrams, examples & quizzes from basics to advanced.',
+  compiler: 'Advanced playground with snippets, assertions, and console helpers.',
   bookmarks: 'Save questions, write notes, and revisit later.',
   dashboard: 'Track streaks, solved counts, and weak areas.',
   daily: 'One curated question per day with ranking.',
