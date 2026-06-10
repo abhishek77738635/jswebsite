@@ -49,19 +49,21 @@ async function invalidateQuestions() {
   await cache.invalidate('cache:difficulties');
 }
 
-function maskPremiumForUser(questions, user, freePreviewIds = null) {
+function maskPremiumForUser(questions, user, freeQuestionIds = null) {
   const hasPaid = user?.hasPaid;
   return questions.map((q) => {
-    const unlocked =
-      hasPaid || (freePreviewIds && freePreviewIds.has(q.id));
+    const isFreeTier = Boolean(freeQuestionIds && freeQuestionIds.has(q.id));
+    const unlocked = hasPaid || isFreeTier;
+    const isPremium = hasPaid ? Boolean(q.isPremium) : !isFreeTier;
 
     if (unlocked) {
-      return { ...q, accessUnlocked: true };
+      return { ...q, accessUnlocked: true, isPremium };
     }
 
     return {
       ...q,
       accessUnlocked: false,
+      isPremium: true,
       code: '// Premium content locked',
       answer: 'Premium content locked',
       explanation: 'Premium content locked',

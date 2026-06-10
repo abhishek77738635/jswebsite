@@ -17,7 +17,6 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
-const FREE_PREVIEW_COUNT = 10;
 const TAB_KEYS = ['questions', 'compiler', 'bookmarks', 'dashboard', 'daily'];
 
 const DIFFICULTY_SORT_ORDER = { All: 0, Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 };
@@ -69,6 +68,7 @@ function Home() {
   const [retryNonce, setRetryNonce] = useState(0);
   const [page, setPage] = useState(1);
   const [hasPaid, setHasPaid] = useState(false);
+  const [freeAccessLabel, setFreeAccessLabel] = useState('About 25% of questions are free');
   const [activeTab, setActiveTab] = useState(
     TAB_KEYS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'questions',
   );
@@ -191,6 +191,12 @@ function Home() {
           }
         }
         setHasPaid(paid);
+        if (questionsRes.access?.freePercent != null) {
+          const pct = Math.round(Number(questionsRes.access.freePercent) * 100);
+          if (Number.isFinite(pct) && pct > 0) {
+            setFreeAccessLabel(`About ${pct}% of questions are free`);
+          }
+        }
       } catch (e) {
         if (!cancelled) {
           console.error(e);
@@ -687,7 +693,7 @@ function Home() {
 
                 {!loading && !hasPaid ? (
                   <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100">
-                    First {FREE_PREVIEW_COUNT} questions are free. Browse the full list — upgrade to unlock the rest.
+                    {freeAccessLabel}. Free questions are spread across the list — upgrade to unlock the rest.
                   </p>
                 ) : null}
 

@@ -10,8 +10,8 @@ const { shouldUseStaticFallback } = require('../lib/firestoreErrors');
 const { invalidateAfterQuestionsWrite } = require('../lib/invalidateDataCache');
 const { applyCacheHeaders, setDataCacheSource } = require('../lib/cacheHeaders');
 const {
-  FREE_PREVIEW_COUNT,
-  getFreePreviewIds,
+  FREE_PERCENT,
+  getFreeQuestionIds,
   sortCatalogForUser,
 } = require('../lib/questionAccess');
 
@@ -38,11 +38,11 @@ function buildQuestionsListResponse(raw, req, res) {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
-  const freePreviewIds = getFreePreviewIds(raw);
+  const freeQuestionIds = getFreeQuestionIds(raw);
 
-  let questions = filterQuestions(raw, req.query);
-  questions = sortCatalogForUser(questions, req.user, freePreviewIds);
-  questions = maskPremiumForUser(questions, req.user, freePreviewIds);
+  let questions = filterQuestions(raw, req.query, req.user, freeQuestionIds);
+  questions = sortCatalogForUser(questions);
+  questions = maskPremiumForUser(questions, req.user, freeQuestionIds);
 
   if (req.user?.hasPaid && sortBy) {
     questions.sort((a, b) => {
@@ -78,14 +78,15 @@ function buildQuestionsListResponse(raw, req, res) {
     },
     access: {
       hasPaid: Boolean(req.user?.hasPaid),
-      freePreviewCount: FREE_PREVIEW_COUNT,
+      freePercent: FREE_PERCENT,
+      freeQuestionCount: freeQuestionIds.size,
       onFreeTier: !req.user?.hasPaid,
-      freePreviewIds: [...freePreviewIds],
+      freeQuestionIds: [...freeQuestionIds],
     },
   };
 }
 
-function filterQuestions(questions, query) {
+function filterQuestions(questions, query, user, freeQuestionIds) {
   const { category, difficulty, isPremium, search } = query;
   let result = questions;
 
@@ -96,9 +97,17 @@ function filterQuestions(questions, query) {
     result = result.filter((q) => q.difficulty === difficulty);
   }
   if (isPremium === 'true') {
-    result = result.filter((q) => q.isPremium === true);
+    if (user?.hasPaid) {
+      result = result.filter((q) => q.isPremium === true);
+    } else {
+      result = result.filter((q) => !freeQuestionIds.has(q.id));
+    }
   } else if (isPremium === 'false') {
-    result = result.filter((q) => q.isPremium === false);
+    if (user?.hasPaid) {
+      result = result.filter((q) => q.isPremium === false);
+    } else {
+      result = result.filter((q) => freeQuestionIds.has(q.id));
+    }
   }
 
   if (search && String(search).trim()) {
@@ -125,6 +134,7 @@ router.get('/stats/summary', async (req, res) => {
     setDataCacheSource(res, source);
     applyCacheHeaders(res, { browserSeconds: 120, edgeSeconds: 300, isPublic: true });
 
+    const freeQuestionIds = getFreeQuestionIds(raw);
     let totalQuestions = 0;
     let freeQuestions = 0;
     let premiumQuestions = 0;
@@ -133,8 +143,8 @@ router.get('/stats/summary', async (req, res) => {
 
     for (const data of raw) {
       totalQuestions++;
-      if (data.isPremium) premiumQuestions++;
-      else freeQuestions++;
+      if (freeQuestionIds.has(data.id)) freeQuestions++;
+      else premiumQuestions++;
 
       const diff = data.difficulty || 'Unknown';
       difficultyStats[diff] = (difficultyStats[diff] || 0) + 1;
@@ -213,8 +223,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const freePreviewIds = getFreePreviewIds(raw);
-    const [data] = maskPremiumForUser([found], req.user, freePreviewIds);
+    const freeQuestionIds = getFreeQuestionIds(raw);
+    const [data] = maskPremiumForUser([found], req.user, freeQuestionIds);
 
     res.json({
       success: true,

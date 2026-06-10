@@ -3,7 +3,7 @@ const router = express.Router();
 const { db } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { getAllQuestions, maskPremiumForUser } = require('../data/questionsCache');
-const { getFreePreviewIds } = require('../lib/questionAccess');
+const { getFreeQuestionIds } = require('../lib/questionAccess');
 
 // GET /api/user/access — payment tier for the signed-in user
 router.get('/access', requireAuth, (req, res) => {
@@ -44,12 +44,12 @@ function stableHash(input) {
   return Math.abs(hash >>> 0);
 }
 
-function getDailyChallengeQuestion(questions, dateKey, hasPaid = false) {
+function getDailyChallengeQuestion(questions, dateKey, hasPaid = false, freeQuestionIds = null) {
   const pool = [...questions]
     .filter((q) => {
       if (!q) return false;
       if (hasPaid) return true;
-      return q.isPremium === false;
+      return freeQuestionIds && freeQuestionIds.has(q.id);
     })
     .sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
 
@@ -58,19 +58,21 @@ function getDailyChallengeQuestion(questions, dateKey, hasPaid = false) {
   return pool[index];
 }
 
-function formatDailyChallengeForUser(challengeRaw, maskedList, hasPaid) {
+function formatDailyChallengeForUser(challengeRaw, maskedList, hasPaid, freeQuestionIds) {
   if (!challengeRaw) return null;
   if (hasPaid) {
     return maskedList.find((q) => q.id === challengeRaw.id) || challengeRaw;
   }
-  if (challengeRaw.isPremium === true) {
+  if (!freeQuestionIds || !freeQuestionIds.has(challengeRaw.id)) {
     return null;
   }
-  return {
-    ...challengeRaw,
-    accessUnlocked: true,
-    isPremium: false,
-  };
+  return (
+    maskedList.find((q) => q.id === challengeRaw.id) || {
+      ...challengeRaw,
+      accessUnlocked: true,
+      isPremium: false,
+    }
+  );
 }
 
 function buildUtcDayRange(dateKey) {
@@ -138,9 +140,9 @@ function computeStreaks(states) {
 
 async function loadQuestionCatalogForUser(user) {
   const { value: raw } = await getAllQuestions();
-  const freePreviewIds = getFreePreviewIds(raw);
-  const masked = maskPremiumForUser(raw, user, freePreviewIds);
-  return { raw, masked, freePreviewIds };
+  const freeQuestionIds = getFreeQuestionIds(raw);
+  const masked = maskPremiumForUser(raw, user, freeQuestionIds);
+  return { raw, masked, freeQuestionIds };
 }
 
 async function loadUserStates(uid) {
@@ -408,15 +410,15 @@ function buildLeaderboardRows(submissions, currentUid) {
 // GET /api/user/daily-challenge
 router.get('/daily-challenge', async (req, res) => {
   try {
-    const { raw, masked } = await loadQuestionCatalogForUser(req.user);
+    const { raw, masked, freeQuestionIds } = await loadQuestionCatalogForUser(req.user);
     const challengeKey = toDateKey(new Date());
     const hasPaid = Boolean(req.user?.hasPaid);
-    const challengeRaw = getDailyChallengeQuestion(raw, challengeKey, hasPaid);
+    const challengeRaw = getDailyChallengeQuestion(raw, challengeKey, hasPaid, freeQuestionIds);
     if (!challengeRaw) {
       return res.status(404).json({ success: false, message: 'No daily challenge available' });
     }
 
-    const challenge = formatDailyChallengeForUser(challengeRaw, masked, hasPaid);
+    const challenge = formatDailyChallengeForUser(challengeRaw, masked, hasPaid, freeQuestionIds);
     if (!challenge) {
       return res.status(404).json({
         success: false,
@@ -480,9 +482,10 @@ router.post('/daily-challenge/submit', requireAuth, async (req, res) => {
     }
 
     const { value: questions } = await getAllQuestions();
+    const freeQuestionIds = getFreeQuestionIds(questions);
     const challengeKey = toDateKey(new Date());
     const hasPaid = Boolean(req.user?.hasPaid);
-    const challengeQuestion = getDailyChallengeQuestion(questions, challengeKey, hasPaid);
+    const challengeQuestion = getDailyChallengeQuestion(questions, challengeKey, hasPaid, freeQuestionIds);
 
     if (!challengeQuestion || challengeQuestion.id !== submittedQuestionId) {
       return res.status(400).json({ success: false, message: 'Submission does not match today\'s challenge' });
