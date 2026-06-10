@@ -82,7 +82,7 @@ export const TOPIC_MCQS = {
     { question: 'Destructuring { a } = obj extracts…', options: ['Property a into variable a', 'Method only', 'Prototype chain', 'All keys as array'], correctIndex: 0, explanation: 'Object destructuring maps properties to variables.' },
     { question: 'Spread ...arr in a new array…', options: ['Deletes items', 'Copies elements into new array', 'Sorts array', 'Converts to object only'], correctIndex: 1, explanation: 'Spread expands iterables into another array literal.' },
     { question: 'const fn = () => {} is…', options: ['Generator', 'Arrow function', 'Class', 'Module'], correctIndex: 1, explanation: 'Arrow functions use => syntax.' },
-    { question: 'Template literal interpolation uses…', options: ['{{ }}', '$' + '{ }', '<% %>', '#{ }'], correctIndex: 1, explanation: 'Wrap expressions in dollar-curly-brace syntax inside backticks to evaluate them.' },
+    { question: 'Template literal interpolation uses…', options: ['{{ }}', String.fromCharCode(36) + '{ }', '<% %>', '#{ }'], correctIndex: 1, explanation: 'Wrap expressions in dollar-curly-brace syntax inside backticks to evaluate them.' },
   ],
   promises: [
     { question: 'Promise states include…', options: ['pending, fulfilled, rejected', 'open, closed', 'read, write', 'start, stop'], correctIndex: 0, explanation: 'Promises start pending then settle fulfilled or rejected.' },
