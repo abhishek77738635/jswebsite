@@ -590,6 +590,7 @@ function Home() {
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col lg:flex-row">
         {activeTab === 'questions' ? (
           <Sidebar
+            panelKey={activeTab}
             selectedCategory={selectedCategory}
             onCategoryChange={(v) => setSelectedCategory(v)}
             selectedDifficulty={selectedDifficulty}
@@ -609,10 +610,14 @@ function Home() {
             stats={sidebarStats}
           />
         ) : activeTab === 'learn' ? (
-          <LearnTopicsSidebar activeTopicId={learnTopicId} onTopicChange={setLearnTopicId} />
+          <LearnTopicsSidebar
+            panelKey={activeTab}
+            activeTopicId={learnTopicId}
+            onTopicChange={setLearnTopicId}
+          />
         ) : null}
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8">
           {activeTab === 'learn' ? (
             <div className="space-y-4">
               <LearnTheoryPanel activeTopicId={learnTopicId} onTryExample={openExampleInCompiler} />

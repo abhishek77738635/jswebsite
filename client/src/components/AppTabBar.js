@@ -22,21 +22,22 @@ const TAB_HINTS = {
 export default function AppTabBar({ activeTab, onTabChange }) {
   return (
     <div className="border-t border-gray-100 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
-      <div className="mx-auto max-w-[1600px] px-4">
+      <div className="mx-auto max-w-[1600px] px-3 sm:px-4">
         <div className="flex gap-1 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+              title={label}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition sm:gap-2 sm:px-4 ${
                 activeTab === id
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'
               }`}
             >
-              <Icon className="h-4 w-4" aria-hidden />
-              {label}
+              <Icon className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="hidden min-[420px]:inline">{label}</span>
             </button>
           ))}
         </div>

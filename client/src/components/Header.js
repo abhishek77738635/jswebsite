@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Menu, User, LayoutDashboard, Search, Moon, Sun, RefreshCw, LifeBuoy } from 'lucide-react';
+import { Menu, User, LayoutDashboard, Search, Moon, Sun, RefreshCw, CircleHelp } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import ProfilePanel from './ProfilePanel';
 import { useAuth } from '../contexts/AuthContext';
@@ -86,32 +86,14 @@ const Header = ({ searchTerm, onSearchChange, isSearching }) => {
   return (
     <>
       <header className="shrink-0 bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-        <div className="mx-auto max-w-[1600px] px-4 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link to="/" className="flex min-w-0 shrink-0">
-              <BrandLogo showSlogan sloganClassName="hidden truncate text-xs md:block" />
-            </Link>
+        <div className="mx-auto max-w-[1600px] px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+            <div className="flex items-center justify-between gap-2 sm:contents">
+              <Link to="/" className="flex min-w-0 shrink-0 sm:order-1">
+                <BrandLogo showSlogan sloganClassName="hidden truncate text-xs sm:block" />
+              </Link>
 
-            <div className="relative min-w-0 flex-1">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                aria-hidden
-              />
-              <input
-                type="search"
-                placeholder="Search title, prompt, tags..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400"
-              />
-              {isSearching ? (
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-500" aria-hidden />
-                </span>
-              ) : null}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <div className="flex shrink-0 items-center gap-1 sm:order-3 sm:gap-2">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -127,13 +109,13 @@ const Header = ({ searchTerm, onSearchChange, isSearching }) => {
                 className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800 sm:hidden"
                 aria-label="Help center"
               >
-                <LifeBuoy className="h-5 w-5" />
+                <CircleHelp className="h-5 w-5" />
               </Link>
               <Link
                 to="/help"
                 className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 sm:flex"
               >
-                <LifeBuoy className="h-4 w-4" />
+                <CircleHelp className="h-4 w-4" />
                 Help
               </Link>
 
@@ -175,6 +157,26 @@ const Header = ({ searchTerm, onSearchChange, isSearching }) => {
               >
                 <Menu className="h-6 w-6" />
               </button>
+              </div>
+            </div>
+
+            <div className="relative min-w-0 w-full sm:order-2 sm:flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                aria-hidden
+              />
+              <input
+                type="search"
+                placeholder="Search title, prompt, tags..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400 sm:py-2"
+              />
+              {isSearching ? (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-500" aria-hidden />
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

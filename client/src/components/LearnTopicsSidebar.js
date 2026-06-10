@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, ChevronRight } from 'lucide-react';
 import { JS_THEORY_TOPICS } from '../constants/jsTheory';
+import CollapsibleSidebar from './CollapsibleSidebar';
 
 const LEVEL_ORDER = ['Beginner', 'Intermediate', 'Advanced'];
 
@@ -54,16 +55,15 @@ function TopicsPanelBody({ activeTopicId, onTopicChange }) {
   );
 }
 
-export default function LearnTopicsSidebar({ activeTopicId, onTopicChange }) {
+export default function LearnTopicsSidebar({ activeTopicId, onTopicChange, panelKey = '' }) {
   return (
-    <aside className="w-full shrink-0 border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-[7.75rem] lg:z-30 lg:flex lg:h-[calc(100vh-7.75rem)] lg:w-64 lg:flex-col lg:self-start lg:border-b-0 lg:border-r lg:overflow-hidden">
-      <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-violet-600 dark:text-violet-400" aria-hidden />
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Topics</h2>
-        </div>
-      </div>
+    <CollapsibleSidebar
+      title="Topics"
+      icon={BookOpen}
+      iconClassName="text-violet-600 dark:text-violet-400"
+      panelKey={`${panelKey}-${activeTopicId}`}
+    >
       <TopicsPanelBody activeTopicId={activeTopicId} onTopicChange={onTopicChange} />
-    </aside>
+    </CollapsibleSidebar>
   );
 }
