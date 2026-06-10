@@ -49,7 +49,7 @@ export const TOPIC_MCQS = {
     { question: 'Optional chaining ?. stops if left side is…', options: ['0', 'false', 'null or undefined', 'NaN'], correctIndex: 2, explanation: '?. short-circuits on nullish values.' },
   ],
   strings: [
-    { question: 'Template literals use…', options: ['Single quotes only', 'Backticks `', 'Double hashes', 'Angle brackets'], correctIndex: 1, explanation: 'Backticks enable ${expression} interpolation.' },
+    { question: 'Template literals use…', options: ['Single quotes only', 'Backticks `', 'Double hashes', 'Angle brackets'], correctIndex: 1, explanation: 'Backticks enable interpolation with dollar-curly-brace syntax around expressions.' },
     { question: '"abc".length is…', options: ['2', '3', '4', 'undefined'], correctIndex: 1, explanation: 'length counts UTF-16 code units in the string.' },
     { question: 'trim() removes…', options: ['All vowels', 'Leading/trailing whitespace', 'Numbers', 'Quotes'], correctIndex: 1, explanation: 'trim cleans spaces at both ends.' },
     { question: 'split(",") returns…', options: ['A string', 'An array', 'A number', 'A boolean'], correctIndex: 1, explanation: 'split divides a string into an array of parts.' },
@@ -82,7 +82,7 @@ export const TOPIC_MCQS = {
     { question: 'Destructuring { a } = obj extracts…', options: ['Property a into variable a', 'Method only', 'Prototype chain', 'All keys as array'], correctIndex: 0, explanation: 'Object destructuring maps properties to variables.' },
     { question: 'Spread ...arr in a new array…', options: ['Deletes items', 'Copies elements into new array', 'Sorts array', 'Converts to object only'], correctIndex: 1, explanation: 'Spread expands iterables into another array literal.' },
     { question: 'const fn = () => {} is…', options: ['Generator', 'Arrow function', 'Class', 'Module'], correctIndex: 1, explanation: 'Arrow functions use => syntax.' },
-    { question: 'Template literal interpolation uses…', options: ['{{ }}', '${ }', '<% %>', '#{ }'], correctIndex: 1, explanation: 'Use ${expression} inside backticks to evaluate the expression.' },
+    { question: 'Template literal interpolation uses…', options: ['{{ }}', '$' + '{ }', '<% %>', '#{ }'], correctIndex: 1, explanation: 'Wrap expressions in dollar-curly-brace syntax inside backticks to evaluate them.' },
   ],
   promises: [
     { question: 'Promise states include…', options: ['pending, fulfilled, rejected', 'open, closed', 'read, write', 'start, stop'], correctIndex: 0, explanation: 'Promises start pending then settle fulfilled or rejected.' },
